@@ -237,7 +237,7 @@ const LandingPage = () => {
               ClassEase
             </div>
             <div className="text-white/60">
-              © 2024 ClassEase. All rights reserved.
+              © 2025 ClassEase. All rights reserved.
             </div>
           </div>
         </div>
