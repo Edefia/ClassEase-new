@@ -229,7 +229,7 @@ const RegisterPage = () => {
 
                 {/* Role */}
                 <div>
-                  <label className="block text-white/80 text-sm font-medium mb-2">
+                  <label className="block text-slate-800 text-sm font-medium mb-2">
                     Role
                   </label>
                   <select
@@ -238,16 +238,16 @@ const RegisterPage = () => {
                     onChange={handleChange}
                     className="form-input w-full px-4 py-3 rounded-lg"
                   >
-                    <option value="student">Student</option>
-                    <option value="lecturer">Lecturer</option>
-                    <option value="manager">Manager</option>
-                    <option value="admin">Administrator</option>
+                    <option value="student" style={{ backgroundColor: '#1A202C' }}>Student</option>
+                    <option value="lecturer" style={{ backgroundColor: '#1A202C' }}>Lecturer</option>
+                    <option value="manager" style={{ backgroundColor: '#1A202C' }}>Manager</option>
+                    <option value="admin" style={{ backgroundColor: '#1A202C' }}>Administrator</option>
                   </select>
                 </div>
 
                 {/* Department */}
                 <div>
-                  <label className="block text-white/80 text-sm font-medium mb-2">
+                  <label className="block text-slate-800 text-sm font-medium mb-2">
                     Department
                   </label>
                   <div className="relative">
@@ -258,9 +258,9 @@ const RegisterPage = () => {
                       onChange={handleChange}
                       className={`form-input w-full pl-12 pr-4 py-3 rounded-lg ${errors.department ? 'error-shake border-red-500' : ''}`}
                     >
-                      <option value="">Select Department</option>
+                      <option style={{ backgroundColor: '#1A202C' }} value="">Select Department</option>
                       {departments.map(dept => (
-                        <option key={dept} value={dept}>{dept}</option>
+                        <option key={dept} style={{ backgroundColor: '#1A202C' }} value={dept}>{dept}</option>
                       ))}
                     </select>
                   </div>
