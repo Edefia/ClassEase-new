@@ -229,7 +229,7 @@ const RegisterPage = () => {
 
                 {/* Role */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-medium mb-2">
+                  <label className="block text-white/80 text-sm font-medium mb-2">
                     Role
                   </label>
                   <select
@@ -247,7 +247,7 @@ const RegisterPage = () => {
 
                 {/* Department */}
                 <div>
-                  <label className="block text-slate-800 text-sm font-medium mb-2">
+                  <label className="block text-white/80 text-sm font-medium mb-2">
                     Department
                   </label>
                   <div className="relative">
