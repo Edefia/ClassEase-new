@@ -59,27 +59,31 @@ export const AuthProvider = ({ children }) => {
 
   const register = async (userData) => {
     setIsLoading(true);
-    // TODO: Implement your own registration logic here.
-    // This is a placeholder.
-    console.log('Register attempt with:', userData);
-    toast({
-      title: "Registration Successful",
-      description: "This is a demo. No account was created.",
-    });
-    setIsLoading(false);
-    // For demo purposes, we can log the user in directly after "registering"
-    const mockUser = {
-        id: 'mock-user-id-new',
-        name: userData.name,
-        email: userData.email,
-        role: userData.role,
-        departmentName: userData.department,
-        student_id: userData.studentId,
-        staff_id: userData.staffId,
-    };
-    setUser(mockUser);
-    setIsAuthenticated(true);
-    return { success: true, user: mockUser };
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(userData),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Registration failed');
+      toast({
+        title: "Registration Successful",
+        description: "Your account has been created.",
+      });
+      // Optionally, set user if backend returns user object
+      // setUser(data.user);
+      // setIsAuthenticated(true);
+      return { success: true, user: data.user };
+    } catch (err) {
+      toast({
+        title: "Registration Failed",
+        description: err.message,
+      });
+      return { success: false, error: err.message };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const logout = async () => {
