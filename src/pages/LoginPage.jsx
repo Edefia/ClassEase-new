@@ -58,21 +58,38 @@ const LoginPage = () => {
     const result = await login(formData.email, formData.password);
     
     if (result.success) {
-      navigate('/dashboard');
+      // Route based on user role
+      const { role } = result.user;
+      switch (role) {
+        case 'student':
+          navigate('/dashboard/student');
+          break;
+        case 'lecturer':
+          navigate('/dashboard/lecturer');
+          break;
+        case 'manager':
+          navigate('/dashboard/manager');
+          break;
+        case 'admin':
+          navigate('/dashboard/admin');
+          break;
+        default:
+          navigate('/dashboard/student '); // fallback
+      }
     }
   };
 
   const demoAccounts = [
-    { email: 'student@ucc.edu.gh', role: 'Student', password: 'password123' },
-    { email: 'lecturer@ucc.edu.gh', role: 'Lecturer', password: 'password123' },
-    { email: 'manager@ucc.edu.gh', role: 'Manager', password: 'password123' },
-    { email: 'admin@ucc.edu.gh', role: 'Admin', password: 'password123' }
+    { email: 'hebradalton@gmail.com', role: 'Student', password: '12345hdA' },
+    { email: 'felixboabeng@gmail.com', role: 'Lecturer', password: '12345hdA' },
+    { email: 'dieudonneladzekpo@gmail.com', role: 'Admin', password: '12345hdA' },
+    { email: 'mcdaltonhebra@gmail.com', role: 'Manager', password: '12345hdA' }
   ];
 
   const fillDemoAccount = (email) => {
     setFormData({
       email,
-      password: 'password123'
+      password: '12345hdA'
     });
   };
 

@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
+import API from '@/lib/api';
 
 const AuthContext = createContext();
 
@@ -17,70 +18,75 @@ export const AuthProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // TODO: Replace with your own authentication logic.
-    // For now, we'll simulate a logged-in user.
-    const mockUser = {
-      id: 'mock-user-id',
-      name: 'John Doe',
-      email: 'john.doe@example.com',
-      role: 'student',
-      departmentName: 'Computer Science',
-      student_id: '12345',
-      staff_id: null,
-    };
-    setUser(mockUser);
-    setIsAuthenticated(true);
+    // Check for stored user data on app load
+    const storedUser = localStorage.getItem('user');
+    const token = localStorage.getItem('token');
+    
+    if (storedUser && token) {
+      try {
+        const userData = JSON.parse(storedUser);
+        setUser(userData);
+        setIsAuthenticated(true);
+      } catch (error) {
+        console.error('Error parsing stored user data:', error);
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+      }
+    }
     setIsLoading(false);
   }, []);
 
   const login = async (email, password) => {
     setIsLoading(true);
-    // TODO: Implement your own login logic here.
-    // This is a placeholder.
-    console.log('Login attempt with:', email, password);
-    const mockUser = {
-        id: 'mock-user-id',
-        name: 'John Doe',
-        email: 'john.doe@example.com',
-        role: 'student',
-        departmentName: 'Computer Science',
-        student_id: '12345',
-        staff_id: null,
-      };
-    setUser(mockUser);
-    setIsAuthenticated(true);
-    toast({
-      title: "Login Successful",
-      description: `Welcome back!`,
-    });
-    setIsLoading(false);
-    return { success: true, user: mockUser };
+    try {
+      const response = await API.post('/auth/login', { email, password });
+      const { user: userData, token } = response.data;
+      
+      // Store user data and token
+      localStorage.setItem('user', JSON.stringify(userData));
+      localStorage.setItem('token', token);
+      
+      setUser(userData);
+      setIsAuthenticated(true);
+      toast({
+        title: "Login Successful",
+        description: `Welcome back, ${userData.name}!`,
+      });
+      return { success: true, user: userData };
+    } catch (err) {
+      toast({
+        title: "Login Failed",
+        description: err.response?.data?.message || err.message,
+      });
+      return { success: false, error: err.response?.data?.message || err.message };
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const register = async (userData) => {
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Registration failed');
+      const response = await API.post('/auth/register', userData);
+      const { user: newUser, token } = response.data;
+      
+      // Store user data and token
+      localStorage.setItem('user', JSON.stringify(newUser));
+      localStorage.setItem('token', token);
+      
+      setUser(newUser);
+      setIsAuthenticated(true);
       toast({
         title: "Registration Successful",
         description: "Your account has been created.",
       });
-      // Optionally, set user if backend returns user object
-      // setUser(data.user);
-      // setIsAuthenticated(true);
-      return { success: true, user: data.user };
+      return { success: true, user: newUser };
     } catch (err) {
       toast({
         title: "Registration Failed",
-        description: err.message,
+        description: err.response?.data?.error || err.message,
       });
-      return { success: false, error: err.message };
+      return { success: false, error: err.response?.data?.error || err.message };
     } finally {
       setIsLoading(false);
     }
@@ -88,25 +94,44 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     setIsLoading(true);
-    // TODO: Implement your own logout logic here.
-    setUser(null);
-    setIsAuthenticated(false);
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
-    setIsLoading(false);
+    try {
+      // Clear stored data
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      setUser(null);
+      setIsAuthenticated(false);
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
+    } catch (err) {
+      console.error('Logout error:', err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const updateProfile = async (updatedData) => {
-    // TODO: Implement your own profile update logic here.
-    console.log('Update profile with:', updatedData);
-    setUser(prevUser => ({ ...prevUser, ...updatedData }));
-    toast({
+    try {
+      const response = await API.put('/auth/profile', updatedData);
+      const updatedUser = response.data.user;
+      
+      // Update stored user data
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setUser(updatedUser);
+      
+      toast({
         title: "Profile Updated",
-        description: "Your profile has been updated locally.",
-    });
-    return { success: true };
+        description: "Your profile has been updated successfully.",
+      });
+      return { success: true };
+    } catch (err) {
+      toast({
+        title: "Update Failed",
+        description: err.response?.data?.message || err.message,
+      });
+      return { success: false, error: err.response?.data?.message || err.message };
+    }
   };
 
   const value = {
@@ -117,8 +142,6 @@ export const AuthProvider = ({ children }) => {
     register,
     logout,
     updateProfile,
-    // session is no longer available, so we can provide null or remove it
-    session: null, 
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

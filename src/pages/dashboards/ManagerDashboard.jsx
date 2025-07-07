@@ -2,16 +2,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Calendar, 
-  Clock, 
-  MapPin, 
-  Users, 
-  CheckCircle, 
-  XCircle, 
-  AlertCircle,
-  TrendingUp,
-  Building,
-  Eye
+  Calendar, Clock, MapPin, Users, CheckCircle, XCircle, AlertCircle, TrendingUp, Building, Eye, Menu, X, User, Bell, LogOut, Settings 
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -22,14 +13,15 @@ import { useBooking } from '@/contexts/BookingContext';
 import BookingApprovalModal from '@/components/modals/BookingApprovalModal';
 
 const ManagerDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { bookings, venues, getPendingBookings, getBookingStats } = useBooking();
   const [selectedBooking, setSelectedBooking] = useState(null);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const pendingBookings = getPendingBookings();
-  const stats = getBookingStats();
-  const recentBookings = bookings.slice(0, 10);
+  const pendingBookings = Array.isArray(getPendingBookings()) ? getPendingBookings() : [];
+  const stats = getBookingStats ? getBookingStats() : { total: 0, pending: 0, approved: 0 };
+  const recentBookings = Array.isArray(bookings) ? bookings.slice(0, 10) : [];
 
   const dashboardStats = [
     {
@@ -55,7 +47,7 @@ const ManagerDashboard = () => {
     },
     {
       title: 'Available Venues',
-      value: venues.length,
+      value: Array.isArray(venues) ? venues.length : 0,
       icon: Building,
       color: 'from-purple-500 to-pink-500',
       change: '0%'
@@ -98,8 +90,116 @@ const ManagerDashboard = () => {
   };
 
   return (
-    <DashboardLayout title="Manager Dashboard">
-      <div className="space-y-8">
+    <div className="flex w-full h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`fixed left-0 top-0 h-screen w-64 z-50 bg-gray-900/95 backdrop-blur-sm flex flex-col duration-300 ease-in-out lg:translate-x-0  lg:inset-0 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex flex-col h-screen">
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-700">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Building className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-white">ClassEase</h1>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-gray-400 hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* User Profile */}
+          <div className="p-6 border-b border-gray-700">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate">{user?.name}</p>
+                <p className="text-gray-400 text-sm truncate">{user?.email}</p>
+                <p className="text-blue-400 text-xs capitalize">{user?.role}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-2">
+            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors bg-blue-600 text-white">
+              <Calendar className="w-5 h-5" />
+              <span className="font-medium">Dashboard</span>
+            </button>
+            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+              <Building className="w-5 h-5" />
+              <span className="font-medium">Manage Venues</span>
+            </button>
+            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+              <Users className="w-5 h-5" />
+              <span className="font-medium">Bookings</span>
+            </button>
+            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+              <Settings className="w-5 h-5" />
+              <span className="font-medium">Settings</span>
+            </button>
+          </nav>
+
+          {/* Logout */}
+          <div className="p-4 border-t border-gray-700">
+            <button
+              onClick={logout}
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-64 min-h-screen max-h-screen overflow-y-auto flex flex-col">
+        {/* Top Bar */}
+        <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-700 p-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between w-full">
+            {/* Mobile/Tablet: App Logo/Name on left, Bell & Hamburger on right */}
+            <div className="flex items-center w-full lg:hidden">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Building className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-lg font-bold text-white">ClassEase</span>
+              </div>
+              <div className="flex items-center space-x-4 ml-auto">
+                <Bell className="w-5 h-5 text-white" />
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="text-white hover:text-gray-300"
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            {/* Desktop: Notifications on right */}
+            <div className="hidden lg:flex items-center space-x-2 text-white ml-auto">
+              <Bell className="w-5 h-5" />
+              <span className="text-sm">Notifications</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard Content */}
+        <div className="flex-1 p-6 flex flex-col">
         {/* Welcome Section */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -313,7 +413,7 @@ const ManagerDashboard = () => {
             {/* Venue Overview */}
             <TabsContent value="venues">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {venues.map((venue) => (
+                {Array.isArray(venues) ? venues.map((venue) => (
                   <motion.div
                     key={venue.id}
                     whileHover={{ scale: 1.05 }}
@@ -330,15 +430,15 @@ const ManagerDashboard = () => {
                       {venue.location} • Capacity: {venue.capacity}
                     </p>
                     <div className="flex flex-wrap gap-2 mb-4">
-                      {venue.amenities.slice(0, 3).map((amenity, index) => (
+                      {Array.isArray(venue.amenities) ? venue.amenities.slice(0, 3).map((amenity, index) => (
                         <span
                           key={index}
                           className="px-2 py-1 bg-white/10 rounded-full text-white/80 text-xs"
                         >
                           {amenity}
                         </span>
-                      ))}
-                      {venue.amenities.length > 3 && (
+                      )) : null}
+                      {Array.isArray(venue.amenities) && venue.amenities.length > 3 && (
                         <span className="px-2 py-1 bg-white/10 rounded-full text-white/80 text-xs">
                           +{venue.amenities.length - 3} more
                         </span>
@@ -352,11 +452,22 @@ const ManagerDashboard = () => {
                       View Details
                     </Button>
                   </motion.div>
-                ))}
+                )) : (
+                  <div className="col-span-full text-center py-12">
+                    <Building className="w-16 h-16 text-white/30 mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">
+                      No venues available
+                    </h3>
+                    <p className="text-white/70">
+                      Venue data is currently unavailable.
+                    </p>
+                  </div>
+                )}
               </div>
             </TabsContent>
           </Tabs>
         </motion.div>
+        </div>
       </div>
 
       {/* Booking Approval Modal */}
@@ -365,7 +476,7 @@ const ManagerDashboard = () => {
         onClose={() => setShowApprovalModal(false)}
         booking={selectedBooking}
       />
-    </DashboardLayout>
+    </div>
   );
 };
 

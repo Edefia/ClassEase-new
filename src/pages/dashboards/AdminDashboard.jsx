@@ -1,13 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { 
-  Users, 
-  Building, 
-  Settings, 
-  Shield,
-  Activity,
-  BarChart3,
-  BellPlus
+  Users, Building, Settings, Shield, Activity, BarChart3, BellPlus, Menu, X, User, Bell, LogOut 
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -109,9 +103,10 @@ const AdminOverviewTab = ({ stats, recentActivity, getActivityIcon, getActivityC
 
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { venues, getBookingStats } = useBooking();
   const [selectedTab, setSelectedTab] = useState('overview');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
 
   const stats = getBookingStats();
@@ -162,8 +157,116 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <DashboardLayout title="Admin Dashboard">
-      <div className="space-y-6">
+    <div className="flex w-full h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      {/* Mobile Sidebar Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <div className={`fixed left-0 top-0 h-screen w-64 z-50 bg-gray-900/95 backdrop-blur-sm flex flex-col duration-300 ease-in-out lg:translate-x-0  lg:inset-0 ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}>
+        <div className="flex flex-col h-screen">
+          {/* Sidebar Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-700">
+            <div className="flex items-center space-x-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <Shield className="w-5 h-5 text-white" />
+              </div>
+              <h1 className="text-xl font-bold text-white">ClassEase</h1>
+            </div>
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="lg:hidden text-gray-400 hover:text-white"
+            >
+              <X className="w-6 h-6" />
+            </button>
+          </div>
+
+          {/* User Profile */}
+          <div className="p-6 border-b border-gray-700">
+            <div className="flex items-center space-x-3">
+              <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-white font-medium truncate">{user?.name}</p>
+                <p className="text-gray-400 text-sm truncate">{user?.email}</p>
+                <p className="text-blue-400 text-xs capitalize">{user?.role}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-4 space-y-2">
+            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors bg-blue-600 text-white">
+              <Activity className="w-5 h-5" />
+              <span className="font-medium">Dashboard</span>
+            </button>
+            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+              <Users className="w-5 h-5" />
+              <span className="font-medium">Manage Users</span>
+            </button>
+            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+              <Building className="w-5 h-5" />
+              <span className="font-medium">Venues</span>
+            </button>
+            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+              <Settings className="w-5 h-5" />
+              <span className="font-medium">Settings</span>
+            </button>
+          </nav>
+
+          {/* Logout */}
+          <div className="p-4 border-t border-gray-700">
+            <button
+              onClick={logout}
+              className="w-full flex items-center space-x-3 px-4 py-3 text-gray-300 hover:bg-gray-800 hover:text-white rounded-lg transition-colors"
+            >
+              <LogOut className="w-5 h-5" />
+              <span className="font-medium">Logout</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 lg:ml-64 min-h-screen max-h-screen overflow-y-auto flex flex-col">
+        {/* Top Bar */}
+        <div className="bg-gray-900/50 backdrop-blur-sm border-b border-gray-700 p-4 sticky top-0 z-10">
+          <div className="flex items-center justify-between w-full">
+            {/* Mobile/Tablet: App Logo/Name on left, Bell & Hamburger on right */}
+            <div className="flex items-center w-full lg:hidden">
+              <div className="flex items-center space-x-2">
+                <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-lg font-bold text-white">ClassEase</span>
+              </div>
+              <div className="flex items-center space-x-4 ml-auto">
+                <Bell className="w-5 h-5 text-white" />
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="text-white hover:text-gray-300"
+                >
+                  <Menu className="w-6 h-6" />
+                </button>
+              </div>
+            </div>
+            {/* Desktop: Notifications on right */}
+            <div className="hidden lg:flex items-center space-x-2 text-white ml-auto">
+              <Bell className="w-5 h-5" />
+              <span className="text-sm">Notifications</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Dashboard Content */}
+        <div className="flex-1 p-6 flex flex-col">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -220,9 +323,9 @@ const AdminDashboard = () => {
             ))}
           </CardContent>
         </Card>
-
+        </div>
       </div>
-    </DashboardLayout>
+    </div>
   );
 };
 
