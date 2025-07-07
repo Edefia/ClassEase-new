@@ -16,7 +16,8 @@ import {
   Menu,
   X,
   User,
-  Bell
+  Bell,
+  Info
 } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
@@ -24,12 +25,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import BookingModal from '@/components/modals/BookingModal';
+import MyBookingsPage from './shared/MyBookingsPage';
+import CampusMapPage from './shared/CampusMapPage';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
   const { getUserBookings, venues } = useBooking();
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [selectedTab, setSelectedTab] = useState('dashboard');
 
   const userBookings = getUserBookings(user?.id);
   const recentBookings = userBookings.slice(0, 5);
@@ -62,11 +66,10 @@ const StudentDashboard = () => {
   ];
 
   const sidebarItems = [
-    { icon: Home, label: 'Dashboard', active: true },
-    { icon: BookOpen, label: 'My Bookings', active: false },
-    { icon: MapPin, label: 'Campus Map', active: false },
-    { icon: Bell, label: 'Notifications', active: false },
-    { icon: Settings, label: 'Settings', active: false },
+    { icon: Home, label: 'Dashboard', value: 'dashboard' },
+    { icon: BookOpen, label: 'My Bookings', value: 'bookings' },
+    { icon: Bell, label: 'Notifications', value: 'notifications' },
+    { icon: Settings, label: 'Settings', value: 'settings' },
   ];
 
   const getStatusColor = (status) => {
@@ -148,16 +151,13 @@ const StudentDashboard = () => {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Tab Navigation in Sidebar */}
           <nav className="flex-1 p-4 space-y-2">
-            {sidebarItems.map((item, index) => (
+            {sidebarItems.map((item) => (
               <button
-                key={index}
-                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                  item.active
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-300 hover:bg-gray-800 hover:text-white'
-                }`}
+                key={item.value}
+                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === item.value ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+                onClick={() => setSelectedTab(item.value)}
               >
                 <item.icon className="w-5 h-5" />
                 <span className="font-medium">{item.label}</span>
@@ -211,197 +211,288 @@ const StudentDashboard = () => {
 
         {/* Dashboard Content */}
         <div className="flex-1 p-6 flex flex-col">
-          <div className="space-y-6 flex-1 flex flex-col h-full">
-        {/* Welcome Section */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-              className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm rounded-xl p-6 border border-blue-500/30"
-        >
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div>
-                  <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
-                Welcome back, {user?.name}!
-              </h2>
-              <p className="text-white/70 text-lg">
-                Ready to book your next venue? Let's get started.
-              </p>
-            </div>
-                <div className="mt-4 md:mt-0">
-              <Button
-                onClick={() => setShowBookingModal(true)}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-6 py-3"
+          {selectedTab === 'dashboard' && (
+            <>
+              {/* Welcome Section */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="bg-gradient-to-r from-blue-600/20 to-purple-600/20 backdrop-blur-sm rounded-xl p-6 border border-blue-500/30"
               >
-                <Plus className="w-5 h-5 mr-2" />
-                Book Venue
-              </Button>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => (
-            <motion.div
-              key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-            >
-                  <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:bg-gray-800/70 transition-colors">
-                    <CardContent className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                          <p className="text-gray-300 text-sm font-medium">
-                        {stat.title}
-                      </p>
-                          <p className="text-2xl font-bold text-white mt-1">
-                        {stat.value}
-                      </p>
-                    </div>
-                    <div className={`p-3 rounded-full bg-gradient-to-r ${stat.color}`}>
-                          <stat.icon className="w-5 h-5 text-white" />
-                    </div>
+                <div className="flex flex-col md:flex-row items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl md:text-3xl font-bold text-white mb-2">
+                      Welcome back, {user?.name}!
+                    </h2>
+                    <p className="text-white/70 text-lg">
+                      Ready to book your next venue? Let's get started.
+                    </p>
                   </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ))}
-        </div>
-
-        {/* Recent Bookings */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-              <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700">
-            <CardHeader>
-              <CardTitle className="text-white flex items-center justify-between">
-                <span>Recent Bookings</span>
-                <Button
-                  variant="outline"
-                  size="sm"
-                      className="border-gray-600 text-white hover:bg-gray-700"
-                >
-                  View All
-                </Button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {recentBookings.length === 0 ? (
-                    <div className="text-center py-8">
-                      <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                      <h3 className="text-lg font-semibold text-white mb-2">
-                    No bookings yet
-                  </h3>
-                      <p className="text-gray-400 mb-4">
-                    Start by booking your first venue!
-                  </p>
-                  <Button
-                    onClick={() => setShowBookingModal(true)}
-                    className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Book Now
-                  </Button>
-                </div>
-              ) : (
-                    <div className="space-y-3">
-                  {recentBookings.map((booking) => (
-                    <motion.div
-                      key={booking.id}
-                          whileHover={{ scale: 1.01 }}
-                          className="bg-gray-700/50 rounded-lg p-4 border border-gray-600"
+                  <div className="mt-4 md:mt-0">
+                    <Button
+                      onClick={() => setShowBookingModal(true)}
+                      className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-6 py-3"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center space-x-4">
-                            <div className="flex-1">
-                              <h4 className="text-white font-semibold">
-                                {booking.venueName}
-                              </h4>
-                                  <p className="text-gray-300 text-sm">
-                                {booking.purpose}
-                              </p>
-                            </div>
-                            <div className="text-right">
-                                  <div className="flex items-center text-gray-300 text-sm mb-1">
-                                <Calendar className="w-4 h-4 mr-1" />
-                                {formatDate(booking.date)}
-                              </div>
-                                  <div className="flex items-center text-gray-300 text-sm">
-                                <Clock className="w-4 h-4 mr-1" />
-                                {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
-                              </div>
-                            </div>
+                      <Plus className="w-5 h-5 mr-2" />
+                      Book Venue
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+                {stats.map((stat, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.1 }}
+                  >
+                    <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:bg-gray-800/70 transition-colors">
+                      <CardContent className="p-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="text-gray-300 text-sm font-medium">
+                              {stat.title}
+                            </p>
+                            <p className="text-2xl font-bold text-white mt-1">
+                              {stat.value}
+                            </p>
+                          </div>
+                          <div className={`p-3 rounded-full bg-gradient-to-r ${stat.color}`}>
+                            <stat.icon className="w-5 h-5 text-white" />
                           </div>
                         </div>
-                        <div className="ml-4">
-                          <span className={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(booking.status)}`}>
-                            {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                          </span>
-                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* Recent Bookings */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 }}
+              >
+                <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 mt-6">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center justify-between">
+                      <span>Recent Bookings</span>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-600 text-white hover:bg-gray-700"
+                      >
+                        View All
+                      </Button>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {recentBookings.length === 0 ? (
+                      <div className="text-center py-8">
+                        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                        <h3 className="text-lg font-semibold text-white mb-2">
+                          No bookings yet
+                        </h3>
+                        <p className="text-gray-400 mb-4">
+                          Start by booking your first venue!
+                        </p>
+                        <Button
+                          onClick={() => setShowBookingModal(true)}
+                          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                        >
+                          <Plus className="w-4 h-4 mr-2" />
+                          Book Now
+                        </Button>
                       </div>
-                      {booking.status === 'declined' && booking.reasonIfDeclined && (
-                        <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                          <p className="text-red-300 text-sm">
-                            <strong>Reason:</strong> {booking.reasonIfDeclined}
-                          </p>
-                        </div>
-                      )}
-                    </motion.div>
-                  ))}
+                    ) : (
+                      <div className="space-y-3">
+                        {recentBookings.map((booking) => (
+                          <motion.div
+                            key={booking.id}
+                            whileHover={{ scale: 1.01 }}
+                            className="bg-gray-700/50 rounded-lg p-4 border border-gray-600"
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex-1">
+                                <div className="flex items-center space-x-4">
+                                  <div className="flex-1">
+                                    <h4 className="text-white font-semibold">
+                                      {booking.venueName}
+                                    </h4>
+                                    <p className="text-gray-300 text-sm">
+                                      {booking.purpose}
+                                    </p>
+                                  </div>
+                                  <div className="text-right">
+                                    <div className="flex items-center text-gray-300 text-sm mb-1">
+                                      <Calendar className="w-4 h-4 mr-1" />
+                                      {formatDate(booking.date)}
+                                    </div>
+                                    <div className="flex items-center text-gray-300 text-sm">
+                                      <Clock className="w-4 h-4 mr-1" />
+                                      {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="ml-4">
+                                <span className={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(booking.status)}`}>
+                                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                                </span>
+                              </div>
+                            </div>
+                            {booking.status === 'declined' && booking.reasonIfDeclined && (
+                              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
+                                <p className="text-red-300 text-sm">
+                                  <strong>Reason:</strong> {booking.reasonIfDeclined}
+                                </p>
+                              </div>
+                            )}
+                          </motion.div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              {/* Quick Actions */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 }}
+                className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6"
+              >
+                <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 cursor-pointer group hover:bg-gray-800/70 transition-colors">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                      <Plus className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-white font-semibold mb-2">Quick Book</h3>
+                    <p className="text-gray-300 text-sm">
+                      Book a venue for your next class or event
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 cursor-pointer group hover:bg-gray-800/70 transition-colors">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                      <MapPin className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-white font-semibold mb-2">Campus Map</h3>
+                    <p className="text-gray-300 text-sm">
+                      Explore available venues on the interactive map
+                    </p>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 cursor-pointer group hover:bg-gray-800/70 transition-colors">
+                  <CardContent className="p-6 text-center">
+                    <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
+                      <Clock className="w-6 h-6 text-white" />
+                    </div>
+                    <h3 className="text-white font-semibold mb-2">My Schedule</h3>
+                    <p className="text-gray-300 text-sm">
+                      View your upcoming bookings and schedule
+                    </p>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </>
+          )}
+          {selectedTab === 'bookings' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex-1 flex flex-col items-center justify-center"
+            >
+              <div className="w-full max-w-3xl">
+                <div className="flex items-center mb-6">
+                  <BookOpen className="w-7 h-7 text-primary mr-3" />
+                  <h2 className="text-2xl font-bold text-white">My Bookings</h2>
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </motion.div>
-
-        {/* Quick Actions */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.6 }}
-              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-        >
-              <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 cursor-pointer group hover:bg-gray-800/70 transition-colors">
-            <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                    <Plus className="w-6 h-6 text-white" />
+                {/* Booking List or Empty State */}
+                {userBookings.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center bg-gray-900/80 rounded-xl p-10 border border-gray-800">
+                    <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
+                    <h3 className="text-xl font-semibold text-white mb-2">No Bookings Found</h3>
+                    <p className="text-muted-foreground mb-4">You haven't made any bookings yet.</p>
+                    <Button onClick={() => setShowBookingModal(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">Book a Venue</Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {userBookings.map((booking, index) => (
+                      <motion.div
+                        key={booking.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3, delay: index * 0.05 }}
+                      >
+                        <div className="bg-gray-900/80 rounded-xl p-6 border border-gray-800 flex flex-col md:flex-row md:items-center md:justify-between">
+                          <div>
+                            <h4 className="text-lg font-semibold text-white mb-1">{booking.venueName || 'Venue Name Missing'}</h4>
+                            <div className="flex items-center text-muted-foreground text-sm mb-1">
+                              <Calendar className="w-4 h-4 mr-2 text-primary" />
+                              {formatDate(booking.date)}
+                            </div>
+                            <div className="flex items-center text-muted-foreground text-sm mb-1">
+                              <Clock className="w-4 h-4 mr-2 text-primary" />
+                              {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                            </div>
+                            <div className="flex items-center text-muted-foreground text-sm mb-1">
+                              <MapPin className="w-4 h-4 mr-2 text-primary" />
+                              {booking.location || 'Location N/A'}
+                            </div>
+                            <p className="text-muted-foreground text-xs">Purpose: {booking.purpose}</p>
+                          </div>
+                          <div className="flex flex-col items-end mt-4 md:mt-0">
+                            <span className={`px-3 py-1 rounded-full text-xs font-medium mb-2 ${getStatusColor(booking.status)}`}>{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
+                            {booking.status === 'declined' && booking.reasonIfDeclined && (
+                              <div className="p-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-xs mt-2">
+                                <strong>Reason:</strong> {booking.reasonIfDeclined}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <h3 className="text-white font-semibold mb-2">Quick Book</h3>
-                  <p className="text-gray-300 text-sm">
-                Book a venue for your next class or event
-              </p>
-            </CardContent>
-          </Card>
-
-              <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 cursor-pointer group hover:bg-gray-800/70 transition-colors">
-            <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                    <MapPin className="w-6 h-6 text-white" />
+            </motion.div>
+          )}
+          {selectedTab === 'notifications' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex-1 flex flex-col items-center justify-center"
+            >
+              <div className="w-full max-w-xl bg-gray-900/80 rounded-xl p-10 border border-gray-800 flex flex-col items-center">
+                <Bell className="w-14 h-14 text-primary mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">Notifications</h2>
+                <p className="text-muted-foreground mb-2">You have no notifications at this time.</p>
+                <p className="text-muted-foreground text-sm">Important updates and alerts will appear here.</p>
               </div>
-              <h3 className="text-white font-semibold mb-2">Campus Map</h3>
-                  <p className="text-gray-300 text-sm">
-                Explore available venues on the interactive map
-              </p>
-            </CardContent>
-          </Card>
-
-              <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 cursor-pointer group hover:bg-gray-800/70 transition-colors">
-            <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-600 rounded-full flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                    <Clock className="w-6 h-6 text-white" />
+            </motion.div>
+          )}
+          {selectedTab === 'settings' && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex-1 flex flex-col items-center justify-center"
+            >
+              <div className="w-full max-w-xl bg-gray-900/80 rounded-xl p-10 border border-gray-800 flex flex-col items-center">
+                <Settings className="w-14 h-14 text-primary mb-4" />
+                <h2 className="text-2xl font-bold text-white mb-2">Settings</h2>
+                <p className="text-muted-foreground mb-2">Settings page coming soon.</p>
+                <p className="text-muted-foreground text-sm">Manage your account and preferences here.</p>
               </div>
-              <h3 className="text-white font-semibold mb-2">My Schedule</h3>
-                  <p className="text-gray-300 text-sm">
-                View your upcoming bookings and schedule
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-          </div>
+            </motion.div>
+          )}
         </div>
       </div>
 

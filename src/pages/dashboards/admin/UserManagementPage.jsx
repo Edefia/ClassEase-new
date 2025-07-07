@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { toast } from '@/components/ui/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,81 +68,78 @@ const UserManagementPage = () => {
   };
 
   return (
-    <DashboardLayout title="User Management">
-      <div className="space-y-6">
-        <motion.div 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col sm:flex-row justify-between items-center gap-4"
-        >
-          <h1 className="text-2xl font-semibold text-foreground">Manage Users</h1>
-          <Button disabled className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-not-allowed">
-            <UserPlus className="w-4 h-4 mr-2" /> Add New User (Disabled)
-          </Button>
-        </motion.div>
-
-        <Card className="bg-card text-card-foreground border-border shadow-lg">
-          <CardHeader>
-            <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
-              <CardTitle className="text-foreground">All Users ({filteredUsers.length})</CardTitle>
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                <Input 
-                  placeholder="Search users..." 
-                  value={searchTerm}
-                  onChange={handleSearch}
-                  className="pl-10 bg-background border-border focus:border-primary"
-                />
-              </div>
+    <div className="space-y-8 w-full h-full px-0 md:px-2 py-4">
+      <motion.div 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row justify-between items-center gap-4"
+      >
+        <h1 className="text-2xl font-semibold text-foreground">Manage Users</h1>
+        <Button disabled className="bg-primary text-primary-foreground hover:bg-primary/90 cursor-not-allowed">
+          <UserPlus className="w-4 h-4 mr-2" /> Add New User (Disabled)
+        </Button>
+      </motion.div>
+      <Card className="bg-card text-card-foreground border-border shadow-lg w-full">
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
+            <CardTitle className="text-foreground">All Users ({filteredUsers.length})</CardTitle>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+              <Input 
+                placeholder="Search users..." 
+                value={searchTerm}
+                onChange={handleSearch}
+                className="pl-10 bg-background border-border focus:border-primary"
+              />
             </div>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="flex justify-center items-center h-64">
-                <div className="loading-spinner-large border-primary"></div>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent">
-                      <TableHead className="text-foreground">Name</TableHead>
-                      <TableHead className="text-foreground">Email</TableHead>
-                      <TableHead className="text-foreground">Role</TableHead>
-                      <TableHead className="text-foreground">Department</TableHead>
-                      <TableHead className="text-foreground">Identifier</TableHead>
-                      <TableHead className="text-foreground text-right">Actions</TableHead>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="loading-spinner-large border-primary"></div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-foreground">Name</TableHead>
+                    <TableHead className="text-foreground">Email</TableHead>
+                    <TableHead className="text-foreground">Role</TableHead>
+                    <TableHead className="text-foreground">Department</TableHead>
+                    <TableHead className="text-foreground">Identifier</TableHead>
+                    <TableHead className="text-foreground text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredUsers.map(user => (
+                    <TableRow key={user.id} className="border-border hover:bg-muted/50">
+                      <TableCell className="font-medium text-foreground">{user.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                      <TableCell className="text-muted-foreground capitalize">{user.role}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.department?.name || 'N/A'}</TableCell>
+                      <TableCell className="text-muted-foreground">{user.student_id || user.staff_id || 'N/A'}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        <Button variant="outline" size="icon" disabled className="cursor-not-allowed">
+                          <Edit className="w-4 h-4 text-primary" />
+                        </Button>
+                        <Button variant="outline" size="icon" onClick={() => handleDeleteUser(user.id)} className="hover:bg-destructive/10 hover:border-destructive">
+                          <Trash2 className="w-4 h-4 text-destructive" />
+                        </Button>
+                      </TableCell>
                     </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredUsers.map(user => (
-                      <TableRow key={user.id} className="border-border hover:bg-muted/50">
-                        <TableCell className="font-medium text-foreground">{user.name}</TableCell>
-                        <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                        <TableCell className="text-muted-foreground capitalize">{user.role}</TableCell>
-                        <TableCell className="text-muted-foreground">{user.department?.name || 'N/A'}</TableCell>
-                        <TableCell className="text-muted-foreground">{user.student_id || user.staff_id || 'N/A'}</TableCell>
-                        <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="icon" disabled className="cursor-not-allowed">
-                            <Edit className="w-4 h-4 text-primary" />
-                          </Button>
-                          <Button variant="outline" size="icon" onClick={() => handleDeleteUser(user.id)} className="hover:bg-destructive/10 hover:border-destructive">
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-            {!isLoading && filteredUsers.length === 0 && (
-              <p className="text-center text-muted-foreground py-8">No users found matching your criteria.</p>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </DashboardLayout>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {!isLoading && filteredUsers.length === 0 && (
+            <p className="text-center text-muted-foreground py-8">No users found matching your criteria.</p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 };
 

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { useBooking } from '@/contexts/BookingContext';
 import { toast } from '@/components/ui/use-toast';
 
@@ -20,6 +20,7 @@ const BookingModal = ({ isOpen, onClose }) => {
     purpose: ''
   });
   const [errors, setErrors] = useState({});
+  const [overlapError, setOverlapError] = useState('');
 
   const handleChange = (name, value) => {
     setFormData(prev => ({
@@ -76,13 +77,31 @@ const BookingModal = ({ isOpen, onClose }) => {
     return Object.keys(newErrors).length === 0;
   };
 
+  const checkOverlapWithDefaultBookings = () => {
+    if (!selectedVenue || !formData.date || !formData.startTime || !formData.endTime) return false;
+    const bookingDate = new Date(formData.date);
+    const dayOfWeek = bookingDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const start = formData.startTime;
+    const end = formData.endTime;
+    if (!Array.isArray(selectedVenue.defaultWeeklyBookings)) return false;
+    return selectedVenue.defaultWeeklyBookings.some((b) => {
+      if (b.dayOfWeek !== dayOfWeek) return false;
+      // Check for time overlap
+      return (
+        (start < b.timeSlotEnd && end > b.timeSlotStart)
+      );
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+    setOverlapError('');
     if (!validateForm()) return;
-    
+    if (checkOverlapWithDefaultBookings()) {
+      setOverlapError('This venue is already reserved for a fixed event during the selected time. Please choose a different time.');
+      return;
+    }
     const result = await createBooking(formData);
-    
     if (result.success) {
       setFormData({
         venueId: '',
@@ -108,11 +127,14 @@ const BookingModal = ({ isOpen, onClose }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="dashboard-card border-0 max-w-2xl">
+      <DialogContent className="dashboard-card border-0 max-w-2xl" aria-describedby="booking-modal-desc">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl font-bold">
             Book a Venue
           </DialogTitle>
+          <DialogDescription id="booking-modal-desc" className="text-white/70 text-base mt-1">
+            Fill out the form below to book a venue. Please check for any fixed weekly bookings before submitting.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -147,8 +169,8 @@ const BookingModal = ({ isOpen, onClose }) => {
           {/* Selected Venue Info */}
           {selectedVenue && (
             <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               className="p-4 rounded-lg bg-white/5 border border-white/10"
             >
               <div className="flex items-start space-x-4">
@@ -175,6 +197,22 @@ const BookingModal = ({ isOpen, onClose }) => {
                       </span>
                     ))}
                   </div>
+                  {/* Default Weekly Bookings */}
+                  {Array.isArray(selectedVenue.defaultWeeklyBookings) && selectedVenue.defaultWeeklyBookings.length > 0 && (
+                    <div className="mt-4">
+                      <h4 className="text-white/80 text-xs font-semibold mb-1">Fixed Weekly Bookings:</h4>
+                      <ul className="text-white/70 text-xs space-y-1">
+                        {selectedVenue.defaultWeeklyBookings.map((booking, idx) => (
+                          <li key={idx} className="flex items-center gap-2">
+                            <Calendar className="w-3 h-3 inline-block mr-1" />
+                            <span>{booking.dayOfWeek}:</span>
+                            <span>{booking.timeSlotStart} - {booking.timeSlotEnd}</span>
+                            <span className="italic text-white/50">({booking.reservedFor})</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -269,6 +307,9 @@ const BookingModal = ({ isOpen, onClose }) => {
           </div>
 
           {/* Action Buttons */}
+          {overlapError && (
+            <div className="text-red-400 text-sm mb-2">{overlapError}</div>
+          )}
           <div className="flex space-x-4 pt-4">
             <Button
               type="button"

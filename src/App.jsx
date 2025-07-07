@@ -23,6 +23,7 @@ import AnalyticsPage from '@/pages/dashboards/admin/AnalyticsPage';
 import UserManagementPage from '@/pages/dashboards/admin/UserManagementPage';
 import SystemSettingsPage from '@/pages/dashboards/admin/SystemSettingsPage';
 import SendNotificationPage from '@/pages/dashboards/admin/SendNotificationPage';
+import VenuesManagementPage from '@/pages/dashboards/admin/VenuesManagementPage';
 
 
 // Protected Route Component
@@ -190,6 +191,14 @@ function App() {
                         <SendNotificationPage />
                       </ProtectedRoute>
                     }
+                  />
+                  <Route 
+                    path="/dashboard/venues" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <VenuesManagementPage />
+                      </ProtectedRoute>
+                    } 
                   />
                   
                   {/* Catch all route */}

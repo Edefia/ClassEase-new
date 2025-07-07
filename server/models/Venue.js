@@ -22,10 +22,9 @@ const venueSchema = new mongoose.Schema({
   amenities: [{
     type: String, // e.g., ['AC', 'Projector', 'WiFi']
   }],
-  coordinates: {
-    lat: Number,
-    lng: Number,
-  },
+  images: [{
+    type: String, // URLs or file paths to images
+  }],
 }, { timestamps: true });
 
 export default mongoose.model('Venue', venueSchema);

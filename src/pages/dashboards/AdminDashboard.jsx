@@ -10,6 +10,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import { useNavigate } from 'react-router-dom';
+import UserManagementPage from './admin/UserManagementPage';
+import AnalyticsPage from './admin/AnalyticsPage';
+import SystemSettingsPage from './admin/SystemSettingsPage';
+import SendNotificationPage from './admin/SendNotificationPage';
+import  Tooltip  from '@/components/ui/tooltip';
+import VenuesManagementPage from './admin/VenuesManagementPage';
 
 // Refactored Components (placeholders, implement in separate files)
 const AdminOverviewTab = ({ stats, recentActivity, getActivityIcon, getActivityColor }) => (
@@ -177,7 +183,7 @@ const AdminDashboard = () => {
               <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
                 <Shield className="w-5 h-5 text-white" />
               </div>
-              <h1 className="text-xl font-bold text-white">ClassEase</h1>
+              <h1 className="text-xl font-bold text-white">Class Ease</h1>
             </div>
             <button
               onClick={() => setSidebarOpen(false)}
@@ -201,21 +207,48 @@ const AdminDashboard = () => {
             </div>
           </div>
 
-          {/* Navigation */}
+          {/* Tab Navigation in Sidebar */}
           <nav className="flex-1 p-4 space-y-2">
-            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors bg-blue-600 text-white">
+            <button
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'overview' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+              onClick={() => setSelectedTab('overview')}
+            >
               <Activity className="w-5 h-5" />
-              <span className="font-medium">Dashboard</span>
+              <span className="font-medium">Overview</span>
             </button>
-            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+            <button
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'users' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+              onClick={() => setSelectedTab('users')}
+            >
               <Users className="w-5 h-5" />
-              <span className="font-medium">Manage Users</span>
+              <span className="font-medium">Users</span>
             </button>
-            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+            <button
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'venues' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+              onClick={() => setSelectedTab('venues')}
+            >
               <Building className="w-5 h-5" />
               <span className="font-medium">Venues</span>
             </button>
-            <button className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors text-gray-300 hover:bg-gray-800 hover:text-white">
+            <button
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'analytics' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+              onClick={() => setSelectedTab('analytics')}
+            >
+              <BarChart3 className="w-5 h-5" />
+              <span className="font-medium">Analytics</span>
+            </button>
+            
+            <button
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'send-notification' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+              onClick={() => setSelectedTab('send-notification')}
+            >
+              <BellPlus className="w-5 h-5" />
+              <span className="font-medium">Send Notification</span>
+            </button>
+            <button
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'settings' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+              onClick={() => setSelectedTab('settings')}
+            >
               <Settings className="w-5 h-5" />
               <span className="font-medium">Settings</span>
             </button>
@@ -258,20 +291,20 @@ const AdminDashboard = () => {
               </div>
             </div>
             {/* Desktop: Notifications on right */}
-            <div className="hidden lg:flex items-center space-x-2 text-white ml-auto">
+            {/* <div className="hidden lg:flex items-center space-x-2 text-white ml-auto">
               <Bell className="w-5 h-5" />
               <span className="text-sm">Notifications</span>
-            </div>
+            </div> */}
           </div>
         </div>
 
         {/* Dashboard Content */}
-        <div className="flex-1 p-6 flex flex-col">
+        <div className="flex-1 p-6 flex flex-col ">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="bg-card text-card-foreground p-6 rounded-xl shadow-lg border border-border"
+          className="bg-card text-card-foreground p-6 rounded-xl shadow-lg border border-border mb-5"
         >
           <div className="flex flex-col md:flex-row items-center justify-between">
             <div>
@@ -281,31 +314,27 @@ const AdminDashboard = () => {
               </p>
             </div>
             <div className="mt-4 md:mt-0 flex items-center space-x-2">
-               <Button variant="outline" onClick={() => navigate("/dashboard/settings")}>
+               <Button variant="outline" onClick={() => setSelectedTab('settings')}>
                 <Settings className="w-4 h-4 mr-2" /> System Settings
               </Button>
-              <Button onClick={() => navigate("/dashboard/send-notification")}>
+              <Button onClick={() => setSelectedTab('send-notification')}>
                 <BellPlus className="w-4 h-4 mr-2" /> Send Notification
               </Button>
             </div>
           </div>
         </motion.div>
 
-        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4 bg-muted p-1 rounded-lg">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Overview</TabsTrigger>
-            <TabsTrigger value="users" onClick={() => navigate('/dashboard/users')} className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Users</TabsTrigger>
-            <TabsTrigger value="venues" onClick={() => navigate('/dashboard/venues')} className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Venues</TabsTrigger>
-            <TabsTrigger value="analytics" onClick={() => navigate('/dashboard/analytics')} className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Analytics</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="overview">
+        {/* Only render the selected tab's content */}
+        {selectedTab === 'overview' && (
             <AdminOverviewTab stats={dashboardStats} recentActivity={recentActivity} getActivityIcon={getActivityIcon} getActivityColor={getActivityColor} />
-          </TabsContent>
-          {/* Other tabs (Users, Venues, Analytics) will be separate page components navigated to via buttons/links */}
-        </Tabs>
-        
-        <Card className="bg-card text-card-foreground border-border shadow-lg">
+        )}
+        {selectedTab === 'users' && <UserManagementPage />}
+        {selectedTab === 'venues' && <VenuesManagementPage />}
+        {selectedTab === 'analytics' && <AnalyticsPage />}
+        {selectedTab === 'settings' && <SystemSettingsPage />}
+        {selectedTab === 'send-notification' && <SendNotificationPage />}
+
+        {/* <Card className="bg-card text-card-foreground border-border shadow-lg mt-5">
           <CardHeader>
             <CardTitle className="text-foreground">Quick Actions</CardTitle>
           </CardHeader>
@@ -322,7 +351,7 @@ const AdminDashboard = () => {
               </Button>
             ))}
           </CardContent>
-        </Card>
+        </Card> */}
         </div>
       </div>
     </div>

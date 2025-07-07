@@ -1,5 +1,4 @@
 import React from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart3, Users, Building, Clock, CheckCircle } from 'lucide-react';
@@ -42,64 +41,30 @@ const AnalyticsPage = () => {
   );
 
   return (
-    <DashboardLayout title="Analytics Dashboard">
-      <div className="space-y-6">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-semibold text-foreground"
-        >
-          Platform Analytics
-        </motion.h1>
+    <div className="space-y-8 w-full h-full px-0 md:px-2 py-4">
+      <motion.h1 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-2xl font-semibold text-foreground"
+      >
+        Platform Analytics
+      </motion.h1>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard title="Total Bookings" value={bookingStats.total} icon={BarChart3} color="text-primary" />
-          <StatCard title="Approved Bookings" value={bookingStats.approved} icon={CheckCircle} color="text-green-500" />
-          <StatCard title="Pending Bookings" value={bookingStats.pending} icon={Clock} color="text-yellow-500" />
-          <StatCard title="Total Venues" value={venues.length} icon={Building} color="text-purple-500" />
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
+        <StatCard title="Total Bookings" value={bookingStats.total} icon={BarChart3} color="text-primary" />
+        <StatCard title="Approved Bookings" value={bookingStats.approved} icon={CheckCircle} color="text-green-500" />
+        <StatCard title="Pending Bookings" value={bookingStats.pending} icon={Clock} color="text-yellow-500" />
+        <StatCard title="Total Venues" value={venues.length} icon={Building} color="text-purple-500" />
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="bg-card text-card-foreground border-border shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-foreground">Bookings per Venue (Top 5)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {bookingsPerVenue.map(item => (
-                  <li key={item.name} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                    <span className="text-sm text-foreground">{item.name}</span>
-                    <span className="font-semibold text-primary">{item.bookings} bookings</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-card text-card-foreground border-border shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-foreground">Peak Booking Times</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="space-y-3">
-                {peakBookingTimes.map(item => (
-                  <li key={item.time} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
-                    <span className="text-sm text-foreground">{item.time}</span>
-                    <span className="font-semibold text-primary">{item.count} bookings</span>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 w-full">
         <Card className="bg-card text-card-foreground border-border shadow-lg">
           <CardHeader>
-            <CardTitle className="text-foreground">Most Active Users/Departments</CardTitle>
+            <CardTitle className="text-foreground">Bookings per Venue (Top 5)</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="space-y-3">
-              {mostActiveUsers.map(item => (
+              {bookingsPerVenue.map(item => (
                 <li key={item.name} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
                   <span className="text-sm text-foreground">{item.name}</span>
                   <span className="font-semibold text-primary">{item.bookings} bookings</span>
@@ -108,15 +73,45 @@ const AnalyticsPage = () => {
             </ul>
           </CardContent>
         </Card>
-        
-        {/* Placeholder for export buttons */}
-        <div className="pt-4 flex space-x-4">
-            <Button variant="outline">Export as CSV</Button>
-            <Button variant="outline">Export as PDF</Button>
-        </div>
-
+        <Card className="bg-card text-card-foreground border-border shadow-lg">
+          <CardHeader>
+            <CardTitle className="text-foreground">Peak Booking Times</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-3">
+              {peakBookingTimes.map(item => (
+                <li key={item.time} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+                  <span className="text-sm text-foreground">{item.time}</span>
+                  <span className="font-semibold text-primary">{item.count} bookings</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       </div>
-    </DashboardLayout>
+
+      <Card className="bg-card text-card-foreground border-border shadow-lg w-full">
+        <CardHeader>
+          <CardTitle className="text-foreground">Most Active Users/Departments</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-3">
+            {mostActiveUsers.map(item => (
+              <li key={item.name} className="flex justify-between items-center p-2 bg-muted/50 rounded-md">
+                <span className="text-sm text-foreground">{item.name}</span>
+                <span className="font-semibold text-primary">{item.bookings} bookings</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      {/* Placeholder for export buttons */}
+      <div className="pt-4 flex space-x-4">
+        <Button variant="outline">Export as CSV</Button>
+        <Button variant="outline">Export as PDF</Button>
+      </div>
+    </div>
   );
 };
 

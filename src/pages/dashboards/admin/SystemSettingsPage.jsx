@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -43,19 +42,18 @@ const SystemSettingsPage = () => {
   };
 
   return (
-    <DashboardLayout title="System Settings">
-      <div className="space-y-8">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-semibold text-foreground"
-        >
-          Configure System Parameters
-        </motion.h1>
+    <div className="space-y-8 w-full h-full px-0 md:px-2 py-4">
+      <motion.h1 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-2xl font-semibold text-foreground"
+      >
+        Configure System Parameters
+      </motion.h1>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* General Settings */}
-          <Card className="lg:col-span-2 bg-card text-card-foreground border-border shadow-lg">
+          <Card className="lg:col-span-2 bg-card text-card-foreground border-border shadow-lg w-full">
             <CardHeader>
               <CardTitle className="flex items-center text-foreground">
                 <Settings className="w-5 h-5 mr-2 text-primary" /> General Settings
@@ -97,7 +95,7 @@ const SystemSettingsPage = () => {
           </Card>
 
           {/* Theme Settings */}
-          <Card className="bg-card text-card-foreground border-border shadow-lg">
+          <Card className="bg-card text-card-foreground border-border shadow-lg w-full">
             <CardHeader>
               <CardTitle className="flex items-center text-foreground">
                 <Palette className="w-5 h-5 mr-2 text-primary" /> Theme Settings
@@ -126,7 +124,7 @@ const SystemSettingsPage = () => {
         </div>
         
         {/* Booking Settings */}
-        <Card className="bg-card text-card-foreground border-border shadow-lg">
+        <Card className="bg-card text-card-foreground border-border shadow-lg w-full">
           <CardHeader>
             <CardTitle className="flex items-center text-foreground">
               <Calendar className="w-5 h-5 mr-2 text-primary" /> Booking Settings
@@ -157,7 +155,7 @@ const SystemSettingsPage = () => {
         </Card>
 
         {/* Notification Settings (Placeholder) */}
-        <Card className="bg-card text-card-foreground border-border shadow-lg">
+        <Card className="bg-card text-card-foreground border-border shadow-lg w-full">
           <CardHeader>
             <CardTitle className="flex items-center text-foreground">
               <Bell className="w-5 h-5 mr-2 text-primary" /> Notification Settings
@@ -169,7 +167,7 @@ const SystemSettingsPage = () => {
         </Card>
 
         {/* Database Settings (Placeholder) */}
-        <Card className="bg-card text-card-foreground border-border shadow-lg">
+        <Card className="bg-card text-card-foreground border-border shadow-lg w-full">
           <CardHeader>
             <CardTitle className="flex items-center text-foreground">
               <Database className="w-5 h-5 mr-2 text-primary" /> Database & Backup
@@ -186,8 +184,7 @@ const SystemSettingsPage = () => {
             <Save className="w-4 h-4 mr-2" /> Save All Settings
           </Button>
         </div>
-      </div>
-    </DashboardLayout>
+    </div>
   );
 };
 
