@@ -22,7 +22,7 @@ import {
 
 const MyBookingsPage = () => {
   const { user } = useAuth();
-  const { bookings, isLoading, fetchBookings, updateBookingStatus } = useBooking();
+  const { bookings, isLoading, fetchBookings, updateBookingStatus, venues } = useBooking();
   const [userBookings, setUserBookings] = useState([]);
   const [editingBooking, setEditingBooking] = useState(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -106,48 +106,59 @@ const MyBookingsPage = () => {
 
         {!isLoading && userBookings.length > 0 && (
           <div className="space-y-4">
-            {userBookings.map((booking, index) => (
-              <motion.div
-                key={booking.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-              >
-                <Card className="bg-card text-card-foreground border-border shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="flex flex-row justify-between items-start pb-2">
-                    <CardTitle className="text-lg text-foreground">{booking.venueName || 'Venue Name Missing'}</CardTitle>
-                    {getStatusBadge(booking.status)}
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <p className="text-muted-foreground text-sm">Purpose: {booking.purpose}</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
-                      <div className="flex items-center text-muted-foreground">
-                        <Calendar className="w-4 h-4 mr-2 text-primary" />
-                        Date: {format(parseISO(booking.date), 'PPP')}
+            {userBookings.map((booking, index) => {
+              // Try all possible ways to get the venue ID
+              const venueId =
+                booking.venue_id ||
+                booking.venue?._id ||
+                booking.venue?.id ||
+                booking.venue ||
+                booking.venueId;
+
+              // Find the venue in the venues array
+              const venue = venues.find(
+                v => v._id?.toString() === venueId?.toString() || v.id?.toString() === venueId?.toString()
+              );
+
+              // Optionally, for debugging:
+              // console.log('Booking:', booking, 'VenueId:', venueId, 'Venue:', venue);
+
+              return (
+                <motion.div
+                  key={booking.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                >
+                  <Card className="bg-card text-card-foreground border-border shadow-md hover:shadow-lg transition-shadow">
+                    <CardHeader className="flex flex-row justify-between items-start pb-2">
+                      <CardTitle className="text-lg text-foreground">{venue ? venue.name : 'Venue Name Missing'}</CardTitle>
+                      {getStatusBadge(booking.status)}
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      <p className="text-muted-foreground text-sm">Purpose: {booking.purpose}</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
+                        <div className="flex items-center text-muted-foreground">
+                          <Calendar className="w-4 h-4 mr-2 text-primary" />
+                          Date: {booking.date ? format(parseISO(booking.date), 'PPP') : 'Invalid Date'}
+                        </div>
+                        <div className="flex items-center text-muted-foreground">
+                          <Clock className="w-4 h-4 mr-2 text-primary" />
+                          Time: {booking.start_time && booking.end_time ? `${format(parseISO(`1970-01-01T${booking.start_time}Z`), 'p')} - ${format(parseISO(`1970-01-01T${booking.end_time}Z`), 'p')}` : 'Invalid Time'}
+                        </div>
                       </div>
-                      <div className="flex items-center text-muted-foreground">
-                        <Clock className="w-4 h-4 mr-2 text-primary" />
-                        Time: {format(parseISO(`1970-01-01T${booking.start_time}Z`), 'p')} - {format(parseISO(`1970-01-01T${booking.end_time}Z`), 'p')}
-                      </div>
-                    </div>
-                    {booking.venue?.location && (
                       <div className="flex items-center text-muted-foreground text-sm">
                         <MapPin className="w-4 h-4 mr-2 text-primary" />
-                        Location: {booking.venue.location}
+                        Location: {venue ? (venue.location || 'N/A') : 'N/A'}
                       </div>
-                    )}
-                    {booking.status === 'declined' && booking.reason_if_declined && (
-                      <div className="p-2 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
-                        <AlertTriangle className="w-4 h-4 inline mr-1" />
-                        Reason for decline: {booking.reason_if_declined}
-                      </div>
-                    )}
-                    <div className="flex space-x-2 pt-2">
-                      {(booking.status === 'pending' || booking.status === 'approved') && (
-                        <>
-                          {/* <Button variant="outline" size="sm" onClick={() => handleEditBooking(booking)} className="border-primary text-primary hover:bg-primary/10">
-                            <Edit className="w-3 h-3 mr-1" /> Edit
-                          </Button> */}
+                      {booking.status === 'declined' && booking.reason_if_declined && (
+                        <div className="p-2 bg-red-50 border border-red-200 rounded-md text-red-700 text-sm">
+                          <AlertTriangle className="w-4 h-4 inline mr-1" />
+                          Reason for decline: {booking.reason_if_declined}
+                        </div>
+                      )}
+                      <div className="flex space-x-2 pt-2">
+                        {(booking.status === 'pending' || booking.status === 'approved') && (
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
                               <Button variant="outline" size="sm" className="border-destructive text-destructive hover:bg-destructive/10">
@@ -158,7 +169,7 @@ const MyBookingsPage = () => {
                               <AlertDialogHeader>
                                 <AlertDialogTitle className="text-foreground">Are you sure?</AlertDialogTitle>
                                 <AlertDialogDescription className="text-muted-foreground">
-                                  This action will cancel your booking for {booking.venueName} on {format(parseISO(booking.date), 'PPP')}. This cannot be undone.
+                                  This action will cancel your booking for {venue ? venue.name : 'Venue'} on {booking.date ? format(parseISO(booking.date), 'PPP') : 'Invalid Date'}. This cannot be undone.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
@@ -169,13 +180,13 @@ const MyBookingsPage = () => {
                               </AlertDialogFooter>
                             </AlertDialogContent>
                           </AlertDialog>
-                        </>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>
