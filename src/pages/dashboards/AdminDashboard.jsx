@@ -21,7 +21,26 @@ import BuildingManagementPage from './admin/BuildingManagementPage';
 import API from '@/lib/api';
 
 // Refactored Components (placeholders, implement in separate files)
-const AdminOverviewTab = ({ stats, recentActivity, getActivityIcon, getActivityColor }) => (
+const AdminOverviewTab = ({ stats, recentActivity, getActivityIcon, getActivityColor, bookings, venues, users }) => {
+  // Live Booking Requests (pending)
+  const pendingBookings = (bookings || []).filter(b => b.status === 'pending').slice(-5).reverse();
+  // Most Booked Venues This Week (simple count by venue)
+  const now = new Date();
+  const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+  const bookingsThisWeek = (bookings || []).filter(b => new Date(b.date) >= weekAgo);
+  const venueBookingCounts = {};
+  bookingsThisWeek.forEach(b => {
+    const venueId = b.venue_id || b.venue?._id || b.venue?.id || b.venue || b.venueId;
+    if (venueId) venueBookingCounts[venueId] = (venueBookingCounts[venueId] || 0) + 1;
+  });
+  const mostBookedVenues = Object.entries(venueBookingCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([venueId, count]) => {
+      const venue = venues.find(v => v._id?.toString() === venueId?.toString() || v.id?.toString() === venueId?.toString());
+      return { name: venue?.name || 'Unknown', count };
+    });
+  return (
   <div className="space-y-6">
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
       {stats.map((stat, index) => (
@@ -82,38 +101,76 @@ const AdminOverviewTab = ({ stats, recentActivity, getActivityIcon, getActivityC
           </div>
         </CardContent>
       </Card>
+        <div className="space-y-6 flex flex-col">
+          {/* Live Booking Requests */}
       <Card className="bg-card text-card-foreground border-border shadow-lg">
         <CardHeader>
-          <CardTitle className="text-foreground">System Health</CardTitle>
+              <CardTitle className="text-foreground">Live Booking Requests</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
-          {[
-            { label: 'Database Status', value: 'Healthy', color: 'text-green-500', bgColor: 'bg-green-500/10' },
-            { label: 'Server Load', value: 'Normal', color: 'text-blue-500', bgColor: 'bg-blue-500/10' },
-            { label: 'Storage Usage', value: '68% Used', color: 'text-yellow-500', bgColor: 'bg-yellow-500/10' },
-            { label: 'Last Backup', value: '2 hours ago', color: 'text-muted-foreground', isStatus: false },
-          ].map(item => (
-            <div key={item.label} className="flex items-center justify-between p-3 rounded-lg bg-background hover:bg-muted transition-colors">
-              <span className="text-foreground text-sm">{item.label}</span>
-              {item.isStatus !== false ? (
-                <span className={`px-2 py-1 ${item.bgColor} ${item.color} rounded-full text-xs font-medium`}>
-                  {item.value}
-                </span>
+            <CardContent>
+              {pendingBookings.length === 0 ? (
+                <div className="text-muted-foreground text-sm">No pending requests.</div>
               ) : (
-                 <span className="text-muted-foreground text-sm">{item.value}</span>
+                <ul className="space-y-2">
+                  {pendingBookings.map((b, idx) => {
+                    // Robust user lookup
+                    const userId = b.user_id || b.user?._id || b.user?.id || b.user || b.userId;
+                    const userObj = users.find(u => u._id?.toString() === userId?.toString() || u.id?.toString() === userId?.toString());
+                    const userName = userObj?.name || b.userName || b.user?.name || b.user?.email || 'Unknown User';
+
+                    // Robust venue lookup
+                    const venueId = b.venue_id || b.venue?._id || b.venue?.id || b.venue || b.venueId;
+                    const venueObj = venues.find(v => v._id?.toString() === venueId?.toString() || v.id?.toString() === venueId?.toString());
+                    const venueName = venueObj?.name || 'Unknown Venue';
+
+                    // Format date
+                    const dateStr = b.date ? new Date(b.date).toLocaleDateString() : 'Unknown Date';
+
+                    return (
+                      <li key={b._id || b.id} className="flex items-center justify-between p-2 rounded hover:bg-muted">
+                        <div>
+                          <span className="font-medium text-foreground">{userName}</span>
+                          <span className="text-muted-foreground text-xs ml-2">{venueName}</span>
+                          <span className="text-muted-foreground text-xs ml-2">{dateStr}</span>
+                        </div>
+                        <span className="px-2 py-1 bg-yellow-100 text-yellow-700 rounded-full text-xs font-medium">Pending</span>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
-            </div>
-          ))}
+            </CardContent>
+          </Card>
+          {/* Most Booked Venues This Week */}
+          <Card className="bg-card text-card-foreground border-border shadow-lg">
+            <CardHeader>
+              <CardTitle className="text-foreground">Most Booked Venues This Week</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {mostBookedVenues.length === 0 ? (
+                <div className="text-muted-foreground text-sm">No bookings this week.</div>
+              ) : (
+                <ul className="space-y-2">
+                  {mostBookedVenues.map((v, idx) => (
+                    <li key={v.name} className="flex items-center justify-between p-2 rounded hover:bg-muted">
+                      <span className="font-medium text-foreground">{v.name}</span>
+                      <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs font-medium">{v.count} bookings</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
         </CardContent>
       </Card>
+        </div>
     </div>
   </div>
 );
+};
 
 
 const AdminDashboard = () => {
   const { user, logout } = useAuth();
-  const { venues, getBookingStats } = useBooking();
+  const { venues, getBookingStats, bookings } = useBooking();
   const [selectedTab, setSelectedTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
@@ -137,23 +194,28 @@ const AdminDashboard = () => {
     API.get('/departments').then(res => setDepartmentsData(res.data)).finally(() => setLoadingDepartments(false));
   }, []);
 
-  const stats = getBookingStats();
-  const totalUsers = 156; // Mock data, replace with actual API call
-  const systemUptime = '99.9%'; // Mock data
+  // Compute real stats
+  const totalUsers = usersData.length;
+  const totalBookings = bookings?.length || 0;
+  const activeVenues = venuesData.length;
+  const systemUptime = '99.9%'; // Remove or replace if you have real uptime
 
   const dashboardStats = [
-    { title: 'Total Users', value: totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', change: '+15 this month' },
-    { title: 'Total Bookings', value: stats.total, icon: BarChart3, color: 'from-green-500 to-emerald-500', change: '+23% this month' },
-    { title: 'Active Venues', value: venues.length, icon: Building, color: 'from-purple-500 to-pink-500', change: '2 added recently' },
-    { title: 'System Uptime', value: systemUptime, icon: Activity, color: 'from-orange-500 to-red-500', change: 'Last 30 days' }
+    { title: 'Total Users', value: totalUsers, icon: Users, color: 'from-blue-500 to-cyan-500', change: '' },
+    { title: 'Total Bookings', value: totalBookings, icon: BarChart3, color: 'from-green-500 to-emerald-500', change: '' },
+    { title: 'Active Venues', value: activeVenues, icon: Building, color: 'from-purple-500 to-pink-500', change: '' },
+    { title: 'System Uptime', value: systemUptime, icon: Activity, color: 'from-orange-500 to-red-500', change: '' }
   ];
 
-  const recentActivity = [
-    { action: 'New user registered', user: 'John Doe', time: '2 minutes ago', type: 'user' },
-    { action: 'Booking approved', user: 'Jane Smith', time: '5 minutes ago', type: 'booking' },
-    { action: 'Venue added', user: 'Admin', time: '1 hour ago', type: 'venue' },
-    { action: 'System backup completed', user: 'System', time: '2 hours ago', type: 'system' },
-    { action: 'User role updated', user: 'Mike Johnson', time: '3 hours ago', type: 'user' }
+  // Build recent activity from real data
+  const recentUsers = usersData.slice(-5).reverse().map(u => ({ action: 'New user registered', user: u.name, time: new Date(u.createdAt).toLocaleString(), type: 'user' }));
+  const recentVenues = venuesData.slice(-5).reverse().map(v => ({ action: 'Venue added', user: v.createdBy || 'Admin', time: new Date(v.createdAt).toLocaleString(), type: 'venue' }));
+  const recentBookings = (bookings || []).slice(-5).reverse().map(b => ({ action: `Booking ${b.status}`, user: b.userName || b.user?.name || b.user?.email || 'N/A', time: new Date(b.createdAt).toLocaleString(), type: 'booking' }));
+  const recentActivity = [...recentUsers, ...recentVenues, ...recentBookings].sort((a, b) => new Date(b.time) - new Date(a.time)).slice(0, 5);
+
+  // System Health (only show DB status if no real metrics)
+  const systemHealth = [
+    { label: 'Database Status', value: (usersData.length && venuesData.length) ? 'Healthy' : 'Unknown', color: 'text-green-500', bgColor: 'bg-green-500/10' }
   ];
 
   const getActivityIcon = (type) => {
@@ -362,7 +424,15 @@ const AdminDashboard = () => {
 
         {/* Only render the selected tab's content */}
         {selectedTab === 'overview' && (
-            <AdminOverviewTab stats={dashboardStats} recentActivity={recentActivity} getActivityIcon={getActivityIcon} getActivityColor={getActivityColor} />
+            <AdminOverviewTab
+              stats={dashboardStats}
+              recentActivity={recentActivity}
+              getActivityIcon={getActivityIcon}
+              getActivityColor={getActivityColor}
+              bookings={bookings}
+              venues={venuesData}
+              users={usersData}
+            />
         )}
         {selectedTab === 'users' && (loadingUsers ? (<div className="flex justify-center items-center h-64"><div className="loading-spinner-large border-primary"></div></div>) : <UserManagementPage />)}
         {selectedTab === 'departments' && (loadingDepartments ? (<div className="flex justify-center items-center h-64"><div className="loading-spinner-large border-primary"></div></div>) : <DepartmentManagementPage />)}

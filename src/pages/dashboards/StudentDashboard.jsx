@@ -40,6 +40,7 @@ const StudentDashboard = () => {
   const [loadingBookings, setLoadingBookings] = useState(true);
   const [venuesData, setVenuesData] = useState([]);
   const [bookingsData, setBookingsData] = useState([]);
+  const [prefillVenue, setPrefillVenue] = useState(null);
 
   useEffect(() => {
     setLoadingVenues(true);
@@ -118,6 +119,13 @@ const StudentDashboard = () => {
   const handleLogout = () => {
     logout();
   };
+
+  // Suggested Venues Section
+  const today = new Date();
+  const userUpcomingVenueIds = userBookings
+    .filter(b => new Date(b.date) >= today)
+    .map(b => b.venue_id || b.venue?._id || b.venue?.id || b.venue || b.venueId);
+  const suggestedVenues = venues.filter(v => !userUpcomingVenueIds.includes(v._id)).slice(0, 5);
 
   return (
     <div className="flex w-full h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
@@ -293,94 +301,109 @@ const StudentDashboard = () => {
                 ))}
               </div>
 
-              {/* Recent Bookings */}
+              {/* Suggested Venues Section */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.4 }}
               >
                 <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 mt-6">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center justify-between">
-                      <span>Recent Bookings</span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="border-gray-600 text-white hover:bg-gray-700"
-                      >
-                        View All
-                      </Button>
-                    </CardTitle>
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-white text-lg flex items-center">Suggested Venues</CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-600 text-white hover:bg-gray-700"
+                      onClick={() => setSelectedTab('findVenues')}
+                    >
+                      View All
+                    </Button>
                   </CardHeader>
                   <CardContent>
-                    {recentBookings.length === 0 ? (
-                      <div className="text-center py-8">
-                        <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                        <h3 className="text-lg font-semibold text-white mb-2">
-                          No bookings yet
-                        </h3>
-                        <p className="text-gray-400 mb-4">
-                          Start by booking your first venue!
-                        </p>
-                        <Button
-                          onClick={() => setShowBookingModal(true)}
-                          className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
-                        >
-                          <Plus className="w-4 h-4 mr-2" />
-                          Book Now
-                        </Button>
-                      </div>
+                    {suggestedVenues.length === 0 ? (
+                      <div className="text-center py-8 text-gray-400">No available venues to suggest right now.</div>
                     ) : (
-                      <div className="space-y-3">
-                        {recentBookings.map((booking) => (
-                          <motion.div
-                            key={booking.id}
-                            whileHover={{ scale: 1.01 }}
-                            className="bg-gray-700/50 rounded-lg p-4 border border-gray-600"
+                      <div className="flex flex-row gap-4 overflow-x-auto pb-2 hide-scrollbar">
+                        {suggestedVenues.map((venue) => (
+                          <div
+                            key={venue._id}
+                            className="min-w-[260px] max-w-xs bg-gray-700/60 rounded-lg p-4 border border-gray-600 flex-shrink-0 flex flex-col justify-between hover:shadow-lg transition-shadow duration-200"
                           >
-                            <div className="flex items-center justify-between">
-                              <div className="flex-1">
-                                <div className="flex items-center space-x-4">
-                                  <div className="flex-1">
-                                    <h4 className="text-white font-semibold">
-                                      {booking.venueName}
-                                    </h4>
-                                    <p className="text-gray-300 text-sm">
-                                      {booking.purpose}
-                                    </p>
-                                  </div>
-                                  <div className="text-right">
-                                    <div className="flex items-center text-gray-300 text-sm mb-1">
-                                      <Calendar className="w-4 h-4 mr-1" />
-                                      {formatDate(booking.date)}
-                                    </div>
-                                    <div className="flex items-center text-gray-300 text-sm">
-                                      <Clock className="w-4 h-4 mr-1" />
-                                      {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="ml-4">
-                                <span className={`px-3 py-1 rounded-full text-white text-xs font-medium ${getStatusColor(booking.status)}`}>
-                                  {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                                </span>
+                            <div className="flex items-center gap-3 mb-2">
+                              {venue.image && (
+                                <img
+                                  src={venue.image.startsWith('/uploads') ? `https://classease-new.onrender.com${venue.image}` : venue.image}
+                                  alt={venue.name}
+                                  className="w-14 h-14 object-cover rounded-md border border-gray-600 bg-gray-800"
+                                />
+                              )}
+                              <div>
+                                <h4 className="text-white font-semibold truncate max-w-[120px]" title={venue.name}>{venue.name}</h4>
+                                <div className="text-gray-300 text-xs mb-1">Type: {venue.type || 'N/A'}</div>
+                                <div className="text-gray-300 text-xs mb-1">Capacity: {venue.capacity || 'N/A'}</div>
                               </div>
                             </div>
-                            {booking.status === 'declined' && booking.reasonIfDeclined && (
-                              <div className="mt-3 p-3 bg-red-500/20 border border-red-500/30 rounded-lg">
-                                <p className="text-red-300 text-sm">
-                                  <strong>Reason:</strong> {booking.reasonIfDeclined}
-                                </p>
-                              </div>
-                            )}
-                          </motion.div>
+                            <Button
+                              size="sm"
+                              className="mt-2 bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700"
+                              onClick={() => {
+                                setPrefillVenue(venue);
+                                setShowBookingModal(true);
+                              }}
+                            >
+                              Book Now
+                            </Button>
+                          </div>
                         ))}
                       </div>
                     )}
                   </CardContent>
                 </Card>
               </motion.div>
+              {/* Recent Bookings (below suggested venues, only if any) */}
+              {recentBookings.length > 0 && (
+                <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 mt-6">
+                  <CardHeader className="flex flex-row items-center justify-between pb-2">
+                    <CardTitle className="text-white text-lg flex items-center">Recent Bookings</CardTitle>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="border-gray-600 text-white hover:bg-gray-700"
+                      onClick={() => setSelectedTab('bookings')}
+                    >
+                      View All
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-row gap-4 overflow-x-auto pb-2 hide-scrollbar">
+                      {recentBookings.slice(0, 5).map((booking) => (
+                        <div
+                          key={booking.id}
+                          className="min-w-[260px] max-w-xs bg-gray-700/60 rounded-lg p-4 border border-gray-600 flex-shrink-0 flex flex-col justify-between hover:shadow-lg transition-shadow duration-200"
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <h4 className="text-white font-semibold truncate max-w-[120px]" title={booking.venueName}>{booking.venueName}</h4>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
+                          </div>
+                          <div className="text-gray-300 text-xs flex items-center mb-1">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {formatDate(booking.date)}
+                          </div>
+                          <div className="text-gray-300 text-xs flex items-center mb-1">
+                            <Clock className="w-3 h-3 mr-1" />
+                            {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
+                          </div>
+                          {booking.status === 'declined' && booking.reasonIfDeclined && (
+                            <div className="mt-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-xs">
+                              <strong>Reason:</strong> {booking.reasonIfDeclined}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Quick Actions */}
               <motion.div
@@ -527,8 +550,23 @@ const StudentDashboard = () => {
       {/* Booking Modal */}
       <BookingModal
         isOpen={showBookingModal}
-        onClose={() => setShowBookingModal(false)}
+        onClose={() => {
+          setShowBookingModal(false);
+          setPrefillVenue(null);
+        }}
+        initialVenueId={prefillVenue?._id}
+        initialBuildingId={prefillVenue?.building?._id || prefillVenue?.building}
       />
+      {/* Add this CSS to hide the horizontal scrollbar */}
+      <style jsx global>{`
+        .hide-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .hide-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 };
