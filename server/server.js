@@ -8,6 +8,7 @@ import bookingRoutes from './routes/bookings.js';
 import usersRoutes from './routes/users.js';
 import departmentsRoutes from './routes/departments.js';
 import buildingsRoutes from './routes/buildings.js';
+import statsRoutes from './routes/stats.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -29,6 +30,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/departments', departmentsRoutes);
 app.use('/api/buildings', buildingsRoutes);
+app.use('/api/stats', statsRoutes);
 
 // DB & Server Init
 mongoose.connect(process.env.MONGO_URI)

@@ -226,10 +226,10 @@ const LoginPage = () => {
 
           {/* Feature Image */}
           <div className="dashboard-card p-6">
-            <img  
+            {/* <img  
               className="w-full rounded-lg"
               alt="Students using digital booking system in university"
-             src="https://images.unsplash.com/photo-1592303637753-ce1e6b8a0ffb" />
+             src="https://images.unsplash.com/photo-1592303637753-ce1e6b8a0ffb" /> */}
             <div className="mt-4 text-center">
               <h4 className="text-lg font-semibold text-white mb-2">
                 Digital Transformation

@@ -12,7 +12,7 @@ function requireAdmin(req, res, next) {
 }
 
 // Get all departments
-router.get('/', verifyToken, requireAdmin, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const departments = await Department.find();
     res.json(departments);

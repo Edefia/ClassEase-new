@@ -5,6 +5,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, User, Building, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import API from '@/lib/api';
 
 const RegisterPage = () => {
   const navigate = useNavigate();
@@ -22,21 +23,23 @@ const RegisterPage = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [errors, setErrors] = useState({});
+  const [departments, setDepartments] = useState([]);
+  const [departmentsLoading, setDepartmentsLoading] = useState(true);
 
-  const departments = [
-    'Computer Science',
-    'Mathematics',
-    'Physics',
-    'Chemistry',
-    'Biology',
-    'Engineering',
-    'Business Administration',
-    'Economics',
-    'Psychology',
-    'English',
-    'History',
-    'Geography'
-  ];
+  React.useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        setDepartmentsLoading(true);
+        const res = await API.get('/departments');
+        setDepartments(res.data);
+      } catch (err) {
+        setDepartments([]);
+      } finally {
+        setDepartmentsLoading(false);
+      }
+    };
+    fetchDepartments();
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -240,8 +243,8 @@ const RegisterPage = () => {
                   >
                     <option value="student" style={{ backgroundColor: '#1A202C' }}>Student</option>
                     <option value="lecturer" style={{ backgroundColor: '#1A202C' }}>Lecturer</option>
-                    <option value="manager" style={{ backgroundColor: '#1A202C' }}>Manager</option>
-                    <option value="admin" style={{ backgroundColor: '#1A202C' }}>Administrator</option>
+                    {/* <option value="manager" style={{ backgroundColor: '#1A202C' }}>Manager</option>
+                    <option value="admin" style={{ backgroundColor: '#1A202C' }}>Administrator</option> */}
                   </select>
                 </div>
 
@@ -257,10 +260,11 @@ const RegisterPage = () => {
                       value={formData.department}
                       onChange={handleChange}
                       className={`form-input w-full pl-12 pr-4 py-3 rounded-lg ${errors.department ? 'error-shake border-red-500' : ''}`}
+                      disabled={departmentsLoading}
                     >
-                      <option style={{ backgroundColor: '#1A202C' }} value="">Select Department</option>
+                      <option style={{ backgroundColor: '#1A202C' }} value="">{departmentsLoading ? 'Loading departments...' : 'Select Department'}</option>
                       {departments.map(dept => (
-                        <option key={dept} style={{ backgroundColor: '#1A202C' }} value={dept}>{dept}</option>
+                        <option key={dept._id} style={{ backgroundColor: '#1A202C' }} value={dept.name}>{dept.name}</option>
                       ))}
                     </select>
                   </div>

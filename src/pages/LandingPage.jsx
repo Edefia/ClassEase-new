@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { Calendar, MapPin, Users, Clock, Shield, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import API from '@/lib/api';
 
 const LandingPage = () => {
   const features = [
@@ -39,12 +40,23 @@ const LandingPage = () => {
     }
   ];
 
-  const stats = [
-    { number: '500+', label: 'Venues Available' },
-    { number: '10K+', label: 'Bookings Made' },
-    { number: '5K+', label: 'Active Users' },
-    { number: '99.9%', label: 'Uptime' }
-  ];
+  const [stats, setStats] = React.useState(null);
+  const [statsLoading, setStatsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        setStatsLoading(true);
+        const res = await API.get('/stats');
+        setStats(res.data);
+      } catch (err) {
+        setStats(null);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
 
   return (
     <div className="min-h-screen">
@@ -79,40 +91,55 @@ const LandingPage = () => {
       </motion.nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 hero-pattern">
-        <div className="container mx-auto px-6 text-center">
+      <section className="pt-32 pb-20 relative overflow-hidden">
+        {/* Decorative background shapes */}
+        <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
+          <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-blue-500/30 to-purple-600/20 rounded-full blur-3xl animate-pulse-slow" />
+          <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tr from-purple-600/30 to-blue-500/10 rounded-full blur-2xl animate-pulse-slow" />
+        </div>
+        <div className="container mx-auto px-6 text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-6xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              Smart Venue
-              <span className="block gradient-text">Booking System</span>
+            <span className="inline-block bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold px-4 py-1 rounded-full mb-4 tracking-widest shadow-lg uppercase">
+              The Smarter Way to Book Campus Venues
+            </span>
+            <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-6 leading-tight drop-shadow-lg">
+              Effortless
+              <span className="block gradient-text">Venue Booking</span>
+              for Everyone
             </h1>
-            <p className="text-xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Transform your university's venue booking experience with ClassEase. 
-              Say goodbye to paper-based systems and hello to digital efficiency.
+            <p className="text-2xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed font-medium">
+              ClassEase is your all-in-one platform for discovering, booking, and managing university venues. Enjoy real-time availability, instant notifications, and seamless collaboration whether you're a student, lecturer, or admin.
             </p>
+            <ul className="flex flex-wrap justify-center gap-4 mb-10 text-white/80 text-base font-medium">
+              <li className="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2"><Calendar className="w-4 h-4" /> Instant Venue Booking</li>
+              <li className="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2"><Users className="w-4 h-4" /> Role-Based Dashboards</li>
+              <li className="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2"><Clock className="w-4 h-4" /> Real-Time Notifications</li>
+              <li className="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2"><MapPin className="w-4 h-4" /> Interactive Campus Map</li>
+            </ul>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/register">
                 <Button 
                   size="lg" 
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-4 pulse-glow"
+                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-4 pulse-glow shadow-xl border-2 border-white/10"
                 >
                   Start Booking Now
                 </Button>
               </Link>
-              <Button 
+             <Link to="/login">
+               <Button 
                 size="lg" 
                 variant="outline" 
                 className="border-white/30 text-white hover:bg-white/10 text-lg px-8 py-4"
               >
-                Watch Demo
+                Find Venues
               </Button>
+             </Link>
             </div>
           </motion.div>
-
           {/* Hero Image */}
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -121,9 +148,9 @@ const LandingPage = () => {
             className="mt-16"
           >
             <img  
-              className="mx-auto rounded-2xl shadow-2xl floating-animation max-w-4xl w-full"
-              alt="University lecture hall with modern technology setup"
-             src="https://images.unsplash.com/photo-1606761568499-6d2451b23c66" />
+              className="mx-auto rounded-2xl shadow-2xl floating-animation max-w-4xl w-full border-4 border-white/10"
+              alt="University of Cape Coast building at dusk"
+              src="/ucc-building.jpg" />
           </motion.div>
         </div>
       </section>
@@ -132,20 +159,34 @@ const LandingPage = () => {
       <section className="py-20">
         <div className="container mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="text-center"
-              >
-                <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                  {stat.number}
+            {statsLoading ? (
+              Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className="text-center animate-pulse">
+                  <div className="text-4xl md:text-5xl font-bold text-white mb-2 bg-white/10 rounded h-12 w-24 mx-auto" />
+                  <div className="text-white/30 text-lg bg-white/5 rounded h-6 w-20 mx-auto mt-2" />
                 </div>
-                <div className="text-white/70 text-lg">{stat.label}</div>
-              </motion.div>
-            ))}
+              ))
+            ) : stats ? (
+              [
+                { number: stats.venues, label: 'Venues Available' },
+                { number: stats.bookings, label: 'Bookings Made' },
+                { number: stats.users, label: 'Active Users' },
+                { number: stats.departments, label: 'Departments' }
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: index * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">
+                    {stat.number}
+                  </div>
+                  <div className="text-white/70 text-lg">{stat.label}</div>
+                </motion.div>
+              ))
+            ) : null}
           </div>
         </div>
       </section>
