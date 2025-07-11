@@ -7,10 +7,6 @@ const venueSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  building: {
-    type: String,
-    required: true,
-  },
   location: {
     type: String,
     default: '',
@@ -22,9 +18,14 @@ const venueSchema = new mongoose.Schema({
   amenities: [{
     type: String, // e.g., ['AC', 'Projector', 'WiFi']
   }],
-  images: [{
-    type: String, // URLs or file paths to images
-  }],
+  image: {
+    type: String, // URL or file path to the image
+  },
+  building: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Building',
+    required: true,
+  },
 }, { timestamps: true });
 
 export default mongoose.model('Venue', venueSchema);

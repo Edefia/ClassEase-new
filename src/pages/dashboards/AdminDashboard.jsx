@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Users, Building, Settings, Shield, Activity, BarChart3, BellPlus, Menu, X, User, Bell, LogOut 
@@ -16,6 +16,9 @@ import SystemSettingsPage from './admin/SystemSettingsPage';
 import SendNotificationPage from './admin/SendNotificationPage';
 import  Tooltip  from '@/components/ui/tooltip';
 import VenuesManagementPage from './admin/VenuesManagementPage';
+import DepartmentManagementPage from './admin/DepartmentManagementPage';
+import BuildingManagementPage from './admin/BuildingManagementPage';
+import API from '@/lib/api';
 
 // Refactored Components (placeholders, implement in separate files)
 const AdminOverviewTab = ({ stats, recentActivity, getActivityIcon, getActivityColor }) => (
@@ -114,6 +117,25 @@ const AdminDashboard = () => {
   const [selectedTab, setSelectedTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const [loadingVenues, setLoadingVenues] = useState(true);
+  const [loadingUsers, setLoadingUsers] = useState(true);
+  const [loadingBuildings, setLoadingBuildings] = useState(true);
+  const [loadingDepartments, setLoadingDepartments] = useState(true);
+  const [venuesData, setVenuesData] = useState([]);
+  const [usersData, setUsersData] = useState([]);
+  const [buildingsData, setBuildingsData] = useState([]);
+  const [departmentsData, setDepartmentsData] = useState([]);
+
+  useEffect(() => {
+    setLoadingVenues(true);
+    API.get('/venues').then(res => setVenuesData(res.data)).finally(() => setLoadingVenues(false));
+    setLoadingUsers(true);
+    API.get('/users').then(res => setUsersData(res.data)).finally(() => setLoadingUsers(false));
+    setLoadingBuildings(true);
+    API.get('/buildings').then(res => setBuildingsData(res.data)).finally(() => setLoadingBuildings(false));
+    setLoadingDepartments(true);
+    API.get('/departments').then(res => setDepartmentsData(res.data)).finally(() => setLoadingDepartments(false));
+  }, []);
 
   const stats = getBookingStats();
   const totalUsers = 156; // Mock data, replace with actual API call
@@ -224,6 +246,20 @@ const AdminDashboard = () => {
               <span className="font-medium">Users</span>
             </button>
             <button
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'departments' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+              onClick={() => setSelectedTab('departments')}
+            >
+              <Building className="w-5 h-5" />
+              <span className="font-medium">Departments</span>
+            </button>
+            <button
+              className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'buildings' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
+              onClick={() => setSelectedTab('buildings')}
+            >
+              <Building className="w-5 h-5" />
+              <span className="font-medium">Buildings</span>
+            </button>
+            <button
               className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'venues' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`}
               onClick={() => setSelectedTab('venues')}
             >
@@ -328,8 +364,10 @@ const AdminDashboard = () => {
         {selectedTab === 'overview' && (
             <AdminOverviewTab stats={dashboardStats} recentActivity={recentActivity} getActivityIcon={getActivityIcon} getActivityColor={getActivityColor} />
         )}
-        {selectedTab === 'users' && <UserManagementPage />}
-        {selectedTab === 'venues' && <VenuesManagementPage />}
+        {selectedTab === 'users' && (loadingUsers ? (<div className="flex justify-center items-center h-64"><div className="loading-spinner-large border-primary"></div></div>) : <UserManagementPage />)}
+        {selectedTab === 'departments' && (loadingDepartments ? (<div className="flex justify-center items-center h-64"><div className="loading-spinner-large border-primary"></div></div>) : <DepartmentManagementPage />)}
+        {selectedTab === 'buildings' && (loadingBuildings ? (<div className="flex justify-center items-center h-64"><div className="loading-spinner-large border-primary"></div></div>) : <BuildingManagementPage />)}
+        {selectedTab === 'venues' && (loadingVenues ? (<div className="flex justify-center items-center h-64"><div className="loading-spinner-large border-primary"></div></div>) : <VenuesManagementPage />)}
         {selectedTab === 'analytics' && <AnalyticsPage />}
         {selectedTab === 'settings' && <SystemSettingsPage />}
         {selectedTab === 'send-notification' && <SendNotificationPage />}

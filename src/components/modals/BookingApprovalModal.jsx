@@ -8,14 +8,33 @@ import { useBooking } from '@/contexts/BookingContext';
 import { useAuth } from '@/contexts/AuthContext';
 
 const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
-  const { updateBookingStatus, isLoading, venues } = useBooking();
+  const { updateBookingStatus, isLoading, venues, bookings, fetchBookings } = useBooking();
   const { user } = useAuth();
   const [declineReason, setDeclineReason] = useState('');
   const [showDeclineForm, setShowDeclineForm] = useState(false);
 
   if (!booking) return null;
 
-  const venue = venues.find(v => v.id === booking.venueId);
+  const API_BASE = 'http://localhost:5000'; // adjust if needed
+
+  // Robust venue lookup
+  const venue = venues.find(v =>
+    v._id === (booking.venue?._id || booking.venueId || booking.venue || booking.venue_id || v.id)
+    || v.id === (booking.venue?._id || booking.venueId || booking.venue || booking.venue_id)
+  );
+
+  // Robust image path
+  let imageSrc = venue?.image;
+  if (imageSrc) {
+    if (imageSrc.startsWith('/uploads')) {
+      imageSrc = `${API_BASE}${imageSrc}`;
+    }
+  } else {
+    imageSrc = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80';
+  }
+
+  // Count bookings for this venue
+  const venueBookingsCount = bookings.filter(b => (b.venue?._id || b.venue) === (venue?._id || venue?.id)).length;
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -35,8 +54,9 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
   };
 
   const handleApprove = async () => {
-    const result = await updateBookingStatus(booking.id, 'approved', user.name);
+    const result = await updateBookingStatus(booking._id || booking.id, 'approved', user.name);
     if (result.success) {
+      await fetchBookings();
       onClose();
     }
   };
@@ -46,8 +66,9 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
       return;
     }
     
-    const result = await updateBookingStatus(booking.id, 'declined', user.name, declineReason);
+    const result = await updateBookingStatus(booking._id || booking.id, 'declined', user.name, declineReason);
     if (result.success) {
+      await fetchBookings();
       setDeclineReason('');
       setShowDeclineForm(false);
       onClose();
@@ -56,7 +77,7 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="dashboard-card border-0 max-w-2xl">
+      <DialogContent className="dashboard-card border-0 max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
           <DialogTitle className="text-white text-2xl font-bold">
             Review Booking Request
@@ -71,16 +92,20 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
                 <img  
                   className="w-24 h-24 object-cover rounded-lg"
                   alt={`${venue.name} venue`}
-                 src={venue.image} />
+                 src={imageSrc} />
               )}
               <div className="flex-1">
                 <h3 className="text-white font-semibold text-xl mb-2">
-                  {booking.venueName}
+                  {booking.venueName || venue?.name}
                 </h3>
                 <div className="space-y-3">
                   <div className="flex items-center text-white/70">
                     <Users className="w-5 h-5 mr-3" />
-                    <span>Requested by: <strong className="text-white">{booking.userName}</strong></span>
+                    <span>Requested by: <strong className="text-white">{booking.userName || booking.user?.name || booking.user?.email || 'N/A'}</strong></span>
+                  </div>
+                  <div className="flex items-center text-white/70">
+                    <span className="mr-2">Purpose:</span>
+                    <span className="text-white/80">{booking.purpose || 'N/A'}</span>
                   </div>
                   <div className="flex items-center text-white/70">
                     <Calendar className="w-5 h-5 mr-3" />
@@ -88,7 +113,7 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
                   </div>
                   <div className="flex items-center text-white/70">
                     <Clock className="w-5 h-5 mr-3" />
-                    <span>{formatTime(booking.startTime)} - {formatTime(booking.endTime)}</span>
+                    <span>{formatTime(booking.startTime || booking.timeStart)} - {formatTime(booking.endTime || booking.timeEnd)}</span>
                   </div>
                   {venue && (
                     <div className="flex items-center text-white/70">
@@ -96,6 +121,10 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
                       <span>{venue.location} • Capacity: {venue.capacity}</span>
                     </div>
                   )}
+                  <div className="flex items-center text-white/70">
+                    <span className="mr-2">Total bookings for this venue:</span>
+                    <span className="text-white font-bold">{venueBookingsCount}</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -207,6 +236,19 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
           </div>
         </div>
       </DialogContent>
+      <style jsx global>{`
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #6366f1 0%, #a21caf 100%);
+    border-radius: 8px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+`}</style>
     </Dialog>
   );
 };

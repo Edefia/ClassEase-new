@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { 
   Calendar, 
@@ -27,6 +27,8 @@ import { useBooking } from '@/contexts/BookingContext';
 import BookingModal from '@/components/modals/BookingModal';
 import MyBookingsPage from './shared/MyBookingsPage';
 import CampusMapPage from './shared/CampusMapPage';
+import API from '@/lib/api';
+import FindVenuesPage from './shared/FindVenuesPage';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
@@ -34,6 +36,17 @@ const StudentDashboard = () => {
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState('dashboard');
+  const [loadingVenues, setLoadingVenues] = useState(true);
+  const [loadingBookings, setLoadingBookings] = useState(true);
+  const [venuesData, setVenuesData] = useState([]);
+  const [bookingsData, setBookingsData] = useState([]);
+
+  useEffect(() => {
+    setLoadingVenues(true);
+    API.get('/venues').then(res => setVenuesData(res.data)).finally(() => setLoadingVenues(false));
+    setLoadingBookings(true);
+    API.get('/bookings').then(res => setBookingsData(res.data)).finally(() => setLoadingBookings(false));
+  }, []);
 
   const userBookings = getUserBookings(user?.id);
   const recentBookings = userBookings.slice(0, 5);
@@ -163,6 +176,10 @@ const StudentDashboard = () => {
                 <span className="font-medium">{item.label}</span>
               </button>
             ))}
+            <button className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${selectedTab === 'findVenues' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-800 hover:text-white'}`} onClick={() => setSelectedTab('findVenues')}>
+              <MapPin className="w-5 h-5" />
+              <span className="font-medium">Find Venues</span>
+            </button>
           </nav>
 
           {/* Logout */}
@@ -211,6 +228,12 @@ const StudentDashboard = () => {
 
         {/* Dashboard Content */}
         <div className="flex-1 p-6 flex flex-col">
+          {loadingVenues || loadingBookings ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="loading-spinner-large border-primary"></div>
+            </div>
+          ) : (
+            <>
           {selectedTab === 'dashboard' && (
             <>
               {/* Welcome Section */}
@@ -492,6 +515,11 @@ const StudentDashboard = () => {
                 <p className="text-muted-foreground text-sm">Manage your account and preferences here.</p>
               </div>
             </motion.div>
+              )}
+            {selectedTab === 'findVenues' && (
+              <FindVenuesPage />
+            )}
+            </>
           )}
         </div>
       </div>

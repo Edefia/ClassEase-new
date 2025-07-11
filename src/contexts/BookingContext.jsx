@@ -1,43 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import API from '@/lib/api';
 
-// --- Mock Data ---
-const mockVenues = [
-  { id: 'venue-1', name: 'Conference Hall A', location: 'North Wing', capacity: 150, image_url: '/placeholder.svg', is_active: true },
-  { id: 'venue-2', name: 'Lecture Theatre B', location: 'East Wing', capacity: 80, image_url: '/placeholder.svg', is_active: true },
-  { id: 'venue-3', name: 'Meeting Room C', location: 'West Wing', capacity: 25, image_url: '/placeholder.svg', is_active: true },
-];
-
-const mockBookings = [
-  {
-    id: 'booking-1',
-    user_id: 'mock-user-id',
-    venue_id: 'venue-1',
-    date: new Date().toISOString().split('T')[0], // Today's date
-    start_time: '10:00:00',
-    end_time: '12:00:00',
-    purpose: 'Annual Department Meeting',
-    status: 'approved',
-    userName: 'John Doe',
-    venueName: 'Conference Hall A',
-    venueImage: '/placeholder.svg',
-  },
-  {
-    id: 'booking-2',
-    user_id: 'another-user-id',
-    venue_id: 'venue-2',
-    date: new Date().toISOString().split('T')[0], // Today's date
-    start_time: '14:00:00',
-    end_time: '15:00:00',
-    purpose: 'Guest Lecture on AI',
-    status: 'pending',
-    userName: 'Jane Smith',
-    venueName: 'Lecture Theatre B',
-    venueImage: '/placeholder.svg',
-  },
-];
-// --- End Mock Data ---
+// --- Remove Mock Data ---
 
 const BookingContext = createContext();
 
@@ -65,23 +31,25 @@ export const BookingProvider = ({ children }) => {
 
   const fetchVenues = async () => {
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setVenues(mockVenues);
-      setIsLoading(false);
-    }, 500);
+    try {
+      const res = await API.get('/venues');
+      setVenues(res.data);
+    } catch (err) {
+      setVenues([]);
+    }
+    setIsLoading(false);
   };
 
   const fetchBookings = async () => {
     if (!user) return;
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      // In a real app, you'd filter bookings based on the user's role here.
-      // For this mock, we'll show all bookings to any logged-in user.
-      setBookings(mockBookings);
-      setIsLoading(false);
-    }, 500);
+    try {
+      const res = await API.get('/bookings');
+      setBookings(res.data);
+    } catch (err) {
+      setBookings([]);
+    }
+    setIsLoading(false);
   };
   
   const createBooking = async (bookingData) => {
@@ -90,74 +58,77 @@ export const BookingProvider = ({ children }) => {
       return { success: false, error: "User not authenticated" };
     }
     setIsLoading(true);
-    
-    // TODO: Replace with your actual API call to create a booking
-    console.log("Creating booking with:", bookingData);
 
-    // Simulate API call
-    return new Promise(resolve => {
-      setTimeout(() => {
-        const venue = venues.find(v => v.id === bookingData.venueId);
-        const newBooking = {
-          id: `booking-${Date.now()}`,
-          user_id: user.id,
-          venue_id: bookingData.venueId,
-          date: bookingData.date,
-          start_time: bookingData.startTime,
-          end_time: bookingData.endTime,
-          purpose: bookingData.purpose,
-          status: 'pending', // New bookings are pending approval
-          userName: user.name,
-          venueName: venue?.name || 'N/A',
-          venueImage: venue?.image_url || '/placeholder.svg',
+    try {
+      let payload;
+      if (Array.isArray(bookingData)) {
+        // Recurring bookings
+        payload = {
+          bookings: bookingData.map(b => ({
+            venue: b.venueId,
+            date: b.date,
+            timeStart: b.startTime,
+            timeEnd: b.endTime,
+            purpose: b.purpose,
+            type: b.recurrence === 'weekly' ? 'recurring' : 'once',
+          }))
         };
-
-        setBookings(prev => [...prev, newBooking]);
-        setIsLoading(false);
-        toast({
-          title: "Booking Created",
-          description: "Your booking request has been submitted for approval.",
-        });
-        resolve({ success: true, booking: newBooking });
-      }, 500);
-    });
+      } else {
+        // Single booking
+        payload = {
+          venue: bookingData.venueId,
+          date: bookingData.date,
+          timeStart: bookingData.startTime,
+          timeEnd: bookingData.endTime,
+          purpose: bookingData.purpose,
+          type: bookingData.recurrence === 'weekly' ? 'recurring' : 'once',
+        };
+      }
+      const res = await API.post('/bookings', payload);
+      setIsLoading(false);
+      toast({
+        title: "Booking Created",
+        description: "Your booking request has been submitted for approval.",
+      });
+      await fetchBookings(); // Refresh bookings after successful booking
+      return { success: true, booking: res.data };
+    } catch (err) {
+      setIsLoading(false);
+      let msg = err.response?.data?.message || err.message;
+      toast({ title: "Booking Failed", description: msg, variant: "destructive" });
+      return { success: false, error: msg };
+    }
   };
 
-  const updateBookingStatus = async (bookingId, status, reason = null) => {
+  const updateBookingStatus = async (bookingId, status, userName, reason = null) => {
     if (!user) {
       toast({ title: "Authentication Error", description: "Action requires authentication.", variant: "destructive" });
       return { success: false, error: "User not authenticated" };
     }
     setIsLoading(true);
 
-    // TODO: Replace with your actual API call to update status
-    console.log(`Updating booking ${bookingId} to ${status} with reason: ${reason}`);
-
-    // Simulate API call
-    return new Promise(resolve => {
-      setTimeout(() => {
-        let updatedBooking = null;
-        setBookings(prev => prev.map(b => {
-          if (b.id === bookingId) {
-            updatedBooking = { ...b, status, reason_if_declined: reason };
-            return updatedBooking;
-          }
-          return b;
-        }));
-
-        setIsLoading(false);
-        if (updatedBooking) {
-          toast({
-            title: "Booking Updated",
-            description: `Booking has been ${status}.`,
-          });
-          resolve({ success: true, booking: updatedBooking });
-        } else {
-          toast({ title: "Update Failed", description: "Booking not found.", variant: "destructive" });
-          resolve({ success: false, error: "Booking not found" });
-        }
-      }, 500);
-    });
+    try {
+      let res;
+      if (status === 'approved') {
+        res = await API.put(`/bookings/${bookingId}/approve`);
+      } else if (status === 'declined') {
+        res = await API.put(`/bookings/${bookingId}/decline`, { reason });
+      } else {
+        throw new Error('Invalid status');
+      }
+      await fetchBookings(); // Refresh bookings after update
+      setIsLoading(false);
+      toast({
+        title: "Booking Updated",
+        description: `Booking has been ${status}.`,
+      });
+      return { success: true, booking: res.data };
+    } catch (err) {
+      setIsLoading(false);
+      let msg = err.response?.data?.message || err.message;
+      toast({ title: "Update Failed", description: msg, variant: "destructive" });
+      return { success: false, error: msg };
+    }
   };
 
   const getUserBookings = (userIdToFilter) => {
@@ -195,6 +166,7 @@ export const BookingProvider = ({ children }) => {
     getVenueBookings,
     getBookingStats,
     fetchBookings,
+    fetchVenues, // <-- Add this line
   };
 
   return (
