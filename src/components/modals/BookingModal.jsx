@@ -11,7 +11,7 @@ import { useBooking } from '@/contexts/BookingContext';
 import { toast } from '@/components/ui/use-toast';
 import API from '@/lib/api';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000';
+const API_BASE_URL = 'https://classease-new.onrender.com';
 
 const BookingModal = ({ isOpen, onClose, initialVenueId, initialBuildingId }) => {
   const { venues, createBooking, isLoading, bookings } = useBooking();

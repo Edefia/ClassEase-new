@@ -63,7 +63,7 @@ const VenuesManagementPage = () => {
     setFormError('');
   };
 
-  const API_BASE = 'http://localhost:5000';
+  const API_BASE = 'https://classease-new.onrender.com';
   const PLACEHOLDER_IMAGE = '/placeholder.svg'; // Adjust if needed
 
   const handleAddOrEditVenue = async (e) => {
@@ -210,7 +210,7 @@ const VenuesManagementPage = () => {
               <Label>Image</Label>
               <Input name="image" type="file" accept="image/*" onChange={handleImageChange} />
               {form.image && !imageFile && (
-                <img src={form.image} alt="Venue" className="mt-2 rounded w-32 h-20 object-cover border" />
+                <img src={form.image.startsWith('/uploads') ? `${API_BASE}${form.image}` : form.image} alt="Venue" className="mt-2 rounded w-32 h-20 object-cover border" />
               )}
               {imageFile && (
                 <span className="block mt-1 text-xs text-muted-foreground">{imageFile.name}</span>

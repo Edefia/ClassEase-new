@@ -15,7 +15,7 @@ const gradientCards = [
   'from-pink-500 to-red-500',
 ];
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'https://classease-new.onrender.com';
 const PLACEHOLDER_IMAGE = '/placeholder.svg';
 
 const AnalyticsPage = () => {

@@ -17,8 +17,18 @@ console.log('MONGO_URI:', process.env.MONGO_URI ? 'Loaded' : 'Not Loaded');
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
+const allowedOrigins = [
+  'http://localhost:5173', // Vite dev
+  'http://localhost:3000', // React dev
+  'https://classease-new-frontend.vercel.app', // Example Vercel deployment
+  'https://classease-new-frontend.netlify.app', // Example Netlify deployment
+];
+
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: allowedOrigins,
+  credentials: true
+}));
 app.use(express.json());
 
 // Routes

@@ -76,7 +76,7 @@ function DashboardTab({ stats, dashboardStats, recentBookings, formatDate, forma
   );
 }
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'https://classease-new.onrender.com';
 const PLACEHOLDER_IMAGE = '/placeholder.svg';
 
 function VenuesTab({ venues, buildings, onVenueUpdated, onVenueAdded, loading }) {

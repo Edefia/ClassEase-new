@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import BookingModal from '@/components/modals/BookingModal';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = 'https://classease-new.onrender.com';
 const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80';
 
 export default function FindVenuesPage({ onBookNow }) {

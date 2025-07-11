@@ -15,7 +15,8 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
 
   if (!booking) return null;
 
-  const API_BASE = 'http://localhost:5000'; // adjust if needed
+  const API_BASE_URL = 'https://classease-new.onrender.com';
+  const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80';
 
   // Robust venue lookup
   const venue = venues.find(v =>
@@ -24,14 +25,7 @@ const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
   );
 
   // Robust image path
-  let imageSrc = venue?.image;
-  if (imageSrc) {
-    if (imageSrc.startsWith('/uploads')) {
-      imageSrc = `${API_BASE}${imageSrc}`;
-    }
-  } else {
-    imageSrc = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80';
-  }
+  const imageSrc = venue && venue.image ? (venue.image.startsWith('/uploads') ? `${API_BASE_URL}${venue.image}` : venue.image) : PLACEHOLDER_IMAGE;
 
   // Count bookings for this venue
   const venueBookingsCount = bookings.filter(b => (b.venue?._id || b.venue) === (venue?._id || venue?.id)).length;
