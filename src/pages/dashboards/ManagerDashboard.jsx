@@ -242,10 +242,6 @@ function VenuesTab({ venues, buildings, onVenueUpdated, onVenueAdded, loading })
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {/* DEBUG: Grid is rendering */}
-          <div style={{ background: 'lime', color: 'black', padding: 16, borderRadius: 8, marginBottom: 8, fontWeight: 'bold' }}>
-            DEBUG: Grid is rendering
-          </div>
           {venues.length === 0 ? (
             <div className="col-span-full text-center py-16">
               <svg xmlns="http://www.w3.org/2000/svg" className="mx-auto mb-4" width="64" height="64" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 21m5.25-4l.75 4m-7.5-4h10.5M4.5 21h15M12 3v12m0 0l-3.75-3.75M12 15l3.75-3.75" /></svg>
