@@ -181,8 +181,8 @@ const BookingModal = ({ isOpen, onClose, initialVenueId, initialBuildingId }) =>
             </div>
             <div>
               <DialogTitle className="text-white text-xl sm:text-2xl font-bold">
-                Book a Venue
-              </DialogTitle>
+            Book a Venue
+          </DialogTitle>
               <div className="flex items-center gap-2 mt-1">
                 <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
                 <span className="text-white/60 text-sm">Available for booking</span>
@@ -209,49 +209,49 @@ const BookingModal = ({ isOpen, onClose, initialVenueId, initialBuildingId }) =>
                 <Building className="w-4 h-4" />
                 Select Building
               </Label>
-              <Select value={formData.buildingId} onValueChange={(value) => handleChange('buildingId', value)}>
+            <Select value={formData.buildingId} onValueChange={(value) => handleChange('buildingId', value)}>
                 <SelectTrigger className={`form-input mt-2 h-12 text-base ${errors.buildingId ? 'border-red-500' : ''}`}>
                   <SelectValue placeholder="Choose a building" />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700 max-h-60">
-                  {buildings.map((building) => (
+                {buildings.map((building) => (
                     <SelectItem key={building._id} value={building._id} className="text-white hover:bg-gray-700 text-base py-3">
                       {building.name}
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                ))}
+              </SelectContent>
+            </Select>
               {errors.buildingId && (
                 <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
                   {errors.buildingId}
                 </p>
               )}
-            </div>
+          </div>
 
             <div>
               <Label className="text-white/80 text-sm font-medium flex items-center gap-2">
                 <MapPin className="w-4 h-4" />
                 Select Venue
               </Label>
-              <Select value={formData.venueId} onValueChange={(value) => handleChange('venueId', value)} disabled={!formData.buildingId}>
+            <Select value={formData.venueId} onValueChange={(value) => handleChange('venueId', value)} disabled={!formData.buildingId}>
                 <SelectTrigger className={`form-input mt-2 h-12 text-base ${errors.venueId ? 'border-red-500' : ''}`} disabled={!formData.buildingId}>
                   <SelectValue placeholder={formData.buildingId ? "Choose a venue" : "Select a building first"} />
                 </SelectTrigger>
                 <SelectContent className="bg-gray-800 border-gray-700 max-h-60">
-                  {venues.filter(v => v.building && v.building._id === formData.buildingId).map((venue) => (
+                {venues.filter(v => v.building && v.building._id === formData.buildingId).map((venue) => (
                     <SelectItem key={venue._id} value={venue._id} className="text-white hover:bg-gray-700 text-base py-3">
-                      <div className="flex items-center space-x-3">
-                        <MapPin className="w-4 h-4" />
-                        <div>
-                          <div className="font-medium">{venue.name}</div>
-                          <div className="text-sm text-gray-400">Capacity: {venue.capacity}</div>
-                        </div>
+                    <div className="flex items-center space-x-3">
+                      <MapPin className="w-4 h-4" />
+                      <div>
+                        <div className="font-medium">{venue.name}</div>
+                        <div className="text-sm text-gray-400">Capacity: {venue.capacity}</div>
                       </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
               {errors.venueId && (
                 <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                   <AlertCircle className="w-3 h-3" />
@@ -345,43 +345,43 @@ const BookingModal = ({ isOpen, onClose, initialVenueId, initialBuildingId }) =>
                   <Clock className="w-4 h-4" />
                   Start Time
                 </Label>
-                <Select value={formData.startTime} onValueChange={(value) => handleChange('startTime', value)}>
+              <Select value={formData.startTime} onValueChange={(value) => handleChange('startTime', value)}>
                   <SelectTrigger className={`form-input mt-2 h-12 text-base ${errors.startTime ? 'border-red-500' : ''}`}>
                     <SelectValue placeholder="Start time" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 max-h-48">
-                    {timeOptions.map((time) => (
+                <SelectContent className="bg-gray-800 border-gray-700 max-h-48">
+                  {timeOptions.map((time) => (
                       <SelectItem key={time} value={time} className="text-white hover:bg-gray-700 text-base py-3">
                         {new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  ))}
+                </SelectContent>
+              </Select>
                 {errors.startTime && (
                   <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
                     {errors.startTime}
                   </p>
                 )}
-              </div>
+            </div>
 
               <div>
                 <Label className="text-white/80 text-sm font-medium flex items-center gap-2">
                   <Clock className="w-4 h-4" />
                   End Time
                 </Label>
-                <Select value={formData.endTime} onValueChange={(value) => handleChange('endTime', value)}>
+              <Select value={formData.endTime} onValueChange={(value) => handleChange('endTime', value)}>
                   <SelectTrigger className={`form-input mt-2 h-12 text-base ${errors.endTime ? 'border-red-500' : ''}`}>
                     <SelectValue placeholder="End time" />
                   </SelectTrigger>
-                  <SelectContent className="bg-gray-800 border-gray-700 max-h-48">
-                    {timeOptions.map((time) => (
+                <SelectContent className="bg-gray-800 border-gray-700 max-h-48">
+                  {timeOptions.map((time) => (
                       <SelectItem key={time} value={time} className="text-white hover:bg-gray-700 text-base py-3">
                         {new Date(`2000-01-01T${time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}
                       </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  ))}
+                </SelectContent>
+              </Select>
                 {errors.endTime && (
                   <p className="text-red-400 text-sm mt-1 flex items-center gap-1">
                     <AlertCircle className="w-3 h-3" />
@@ -395,21 +395,21 @@ const BookingModal = ({ isOpen, onClose, initialVenueId, initialBuildingId }) =>
           {/* Recurrence Settings */}
           <div className="space-y-4">
             <div>
-              <Label className="text-white/80 text-sm font-medium">Recurrence</Label>
-              <Select value={formData.recurrence} onValueChange={v => handleChange('recurrence', v)}>
+            <Label className="text-white/80 text-sm font-medium">Recurrence</Label>
+            <Select value={formData.recurrence} onValueChange={v => handleChange('recurrence', v)}>
                 <SelectTrigger className="form-input mt-2 h-12 text-base">
                   <SelectValue placeholder="Recurrence" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+              <SelectContent className="bg-gray-800 border-gray-700">
                   <SelectItem value="once" className="text-white hover:bg-gray-700 text-base py-3">One Day Only</SelectItem>
                   <SelectItem value="weekly" className="text-white hover:bg-gray-700 text-base py-3">Weekly (Same day for N weeks)</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              </SelectContent>
+            </Select>
+          </div>
 
-            {formData.recurrence === 'weekly' && (
+          {formData.recurrence === 'weekly' && (
               <div>
-                <Label className="text-white/80 text-sm font-medium">Number of Weeks</Label>
+              <Label className="text-white/80 text-sm font-medium">Number of Weeks</Label>
                 <Input 
                   type="number" 
                   min={1} 

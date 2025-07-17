@@ -69,10 +69,10 @@ router.put('/:id/approve', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    const updated = await Booking.findByIdAndUpdate(req.params.id, {
-      status: 'approved',
-      reviewedBy: req.user.id
-    }, { new: true });
+  const updated = await Booking.findByIdAndUpdate(req.params.id, {
+    status: 'approved',
+    reviewedBy: req.user.id
+  }, { new: true });
 
     // Create notification for approval
     await Notification.create({
@@ -86,7 +86,7 @@ router.put('/:id/approve', verifyToken, async (req, res) => {
       metadata: { booking_id: booking._id, action: 'approved' }
     });
 
-    res.json(updated);
+  res.json(updated);
   } catch (error) {
     console.error('Error approving booking:', error);
     res.status(500).json({ error: 'Failed to approve booking' });
@@ -100,11 +100,11 @@ router.put('/:id/decline', verifyToken, async (req, res) => {
       return res.status(404).json({ error: 'Booking not found' });
     }
 
-    const updated = await Booking.findByIdAndUpdate(req.params.id, {
-      status: 'declined',
-      reviewedBy: req.user.id,
-      reasonIfDeclined: req.body.reason
-    }, { new: true });
+  const updated = await Booking.findByIdAndUpdate(req.params.id, {
+    status: 'declined',
+    reviewedBy: req.user.id,
+    reasonIfDeclined: req.body.reason
+  }, { new: true });
 
     // Create notification for decline
     let message = `Your booking for ${booking.venue?.name || 'venue'} on ${booking.date} has been declined.`;
@@ -123,7 +123,7 @@ router.put('/:id/decline', verifyToken, async (req, res) => {
       metadata: { booking_id: booking._id, action: 'declined', reason: req.body.reason }
     });
 
-    res.json(updated);
+  res.json(updated);
   } catch (error) {
     console.error('Error declining booking:', error);
     res.status(500).json({ error: 'Failed to decline booking' });

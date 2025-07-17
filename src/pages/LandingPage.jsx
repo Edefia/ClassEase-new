@@ -1,47 +1,25 @@
 
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Clock, Shield, Zap } from 'lucide-react';
+import { Calendar, MapPin, Users, Clock, Shield, Zap, Menu, X } from 'lucide-react';
+import { FaCalendarCheck, FaBuilding, FaBookOpen, FaUsers, FaUniversity } from 'react-icons/fa';
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
 
-const LandingPage = () => {
-  const features = [
-    {
-      icon: Calendar,
-      title: 'Smart Booking',
-      description: 'Book venues instantly with real-time availability checking and conflict prevention.'
-    },
-    {
-      icon: MapPin,
-      title: 'Campus Map',
-      description: 'Interactive campus map showing all venues with detailed information and directions.'
-    },
-    {
-      icon: Users,
-      title: 'Role-Based Access',
-      description: 'Different dashboards for students, lecturers, managers, and administrators.'
-    },
-    {
-      icon: Clock,
-      title: 'Real-Time Updates',
-      description: 'Get instant notifications about booking approvals, changes, and reminders.'
-    },
-    {
-      icon: Shield,
-      title: 'Secure & Reliable',
-      description: 'Enterprise-grade security with role-based permissions and data protection.'
-    },
-    {
-      icon: Zap,
-      title: 'Lightning Fast',
-      description: 'Modern interface with smooth animations and lightning-fast performance.'
-    }
-  ];
+const features = [
+  { icon: Calendar, title: 'Instant Booking', description: 'Book venues in seconds with real-time availability.' },
+  { icon: MapPin, title: 'Campus Map', description: 'Find and explore all venues on an interactive map.' },
+  { icon: Users, title: 'Role Dashboards', description: 'Personalized dashboards for students, staff, and admins.' },
+  { icon: Clock, title: 'Live Notifications', description: 'Get notified instantly about bookings and updates.' },
+  { icon: Shield, title: 'Secure', description: 'Enterprise-grade security and privacy.' },
+  { icon: Zap, title: 'Lightning Fast', description: 'Modern UI with smooth, responsive performance.' }
+];
 
+const LandingPage = () => {
   const [stats, setStats] = React.useState(null);
   const [statsLoading, setStatsLoading] = React.useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
   React.useEffect(() => {
     const fetchStats = async () => {
@@ -59,131 +37,136 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-gradient-to-br from-[#0a0e1a] via-[#181c2a] to-[#10121a] text-white flex flex-col">
       {/* Navigation */}
-      <motion.nav 
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        className="fixed top-0 w-full z-50 glass-effect"
-      >
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <motion.div 
-              className="text-2xl font-bold gradient-text"
-              whileHover={{ scale: 1.05 }}
-            >
-              ClassEase
-            </motion.div>
-            <div className="flex items-center space-x-4">
-              <Link to="/login">
-                <Button variant="ghost" className="text-white hover:bg-white/10">
-                  Login
-                </Button>
-              </Link>
-              <Link to="/register">
-                <Button className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700">
-                  Get Started
-                </Button>
-              </Link>
-            </div>
-          </div>
+      <nav className="w-full z-50 px-6 md:px-20 py-4 flex items-center justify-between glass-effect fixed top-0 left-0">
+        <div className="flex items-center gap-2">
+          <FaCalendarCheck className="w-6 h-6 text-blue-400 drop-shadow" />
+          <span className="text-2xl font-serif tracking-wider items-center text-slate-200 drop-shadow-lg">ClassEase</span>
         </div>
-      </motion.nav>
+        <div className="hidden md:flex items-center gap-2">
+          <Link to="/login">
+            <Button variant="ghost" className="text-white/80 hover:bg-white/10 px-5">Login</Button>
+          </Link>
+          <Link to="/register">
+            <Button className="bg-gradient-to-r from-blue-600 to-purple-700 text-white px-5 font-semibold shadow-lg">Get Started</Button>
+          </Link>
+        </div>
+        {/* Hamburger for mobile */}
+        <button
+          className="md:hidden p-2 rounded text-white/80 hover:bg-white/10 focus:outline-none"
+          onClick={() => setMobileMenuOpen(true)}
+          aria-label="Open menu"
+        >
+          <Menu className="w-7 h-7" />
+        </button>
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween', duration: 0.3 }}
+              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-lg flex flex-col"
+            >
+              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+                <div className="flex items-center gap-2">
+                  <FaCalendarCheck className="w-8 h-8 text-blue-400 drop-shadow" />
+                  <span className="text-2xl font-serif tracking-wider items-center text-slate-200 drop-shadow-lg">ClassEase</span>
+                </div>
+                <button
+                  className="p-2 rounded text-white/80 hover:bg-white/10 focus:outline-none"
+                  onClick={() => setMobileMenuOpen(false)}
+                  aria-label="Close menu"
+                >
+                  <X className="w-7 h-7" />
+                </button>
+              </div>
+              <div className="flex flex-col gap-4 px-6 py-10 text-lg">
+                <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
+                  <Button variant="ghost" className="w-full text-white/90 justify-start text-lg py-3">Login</Button>
+                </Link>
+                <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
+                  <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white text-lg py-3 font-semibold">Get Started</Button>
+                </Link>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </nav>
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 relative overflow-hidden">
-        {/* Decorative background shapes */}
-        <div className="absolute top-0 left-0 w-full h-full pointer-events-none z-0">
-          <div className="absolute -top-32 -left-32 w-96 h-96 bg-gradient-to-br from-blue-500/30 to-purple-600/20 rounded-full blur-3xl animate-pulse-slow" />
-          <div className="absolute bottom-0 right-0 w-80 h-80 bg-gradient-to-tr from-purple-600/30 to-blue-500/10 rounded-full blur-2xl animate-pulse-slow" />
+      <section className="relative flex-1 flex items-center justify-center min-h-screen pt-24 pb-12 px-4">
+        {/* Decorative Blobs */}
+        <div className="absolute inset-0 pointer-events-none z-0">
+          <div className="absolute -top-40 -left-40 w-[32rem] h-[32rem] bg-gradient-to-br from-blue-600/30 to-purple-700/20 rounded-full blur-3xl animate-pulse-slow" />
+          <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] bg-gradient-to-tr from-purple-700/30 to-blue-600/10 rounded-full blur-2xl animate-pulse-slow" />
         </div>
-        <div className="container mx-auto px-6 text-center relative z-10">
-          <motion.div
+        <div className="relative z-10 w-full max-w-3xl mx-auto text-center flex flex-col items-center justify-center">
+          <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
+            className="text-5xl md:text-6xl font-extrabold leading-tight mb-6 drop-shadow-xl"
           >
-            <span className="inline-block bg-gradient-to-r from-blue-500 to-purple-600 text-white text-xs font-semibold px-4 py-1 rounded-full mb-4 tracking-widest shadow-lg uppercase">
-              The Smarter Way to Book Campus Venues
-            </span>
-            <h1 className="text-6xl md:text-7xl font-extrabold text-white mb-6 leading-tight drop-shadow-lg">
-              Effortless
-              <span className="block gradient-text">Venue Booking</span>
-              for Everyone
-            </h1>
-            <p className="text-2xl text-white/80 mb-8 max-w-3xl mx-auto leading-relaxed font-medium">
-              ClassEase is your all-in-one platform for discovering, booking, and managing university venues. Enjoy real-time availability, instant notifications, and seamless collaboration whether you're a student, lecturer, or admin.
-            </p>
-            <ul className="flex flex-wrap justify-center gap-4 mb-10 text-white/80 text-base font-medium">
-              <li className="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2"><Calendar className="w-4 h-4" /> Instant Venue Booking</li>
-              <li className="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2"><Users className="w-4 h-4" /> Role-Based Dashboards</li>
-              <li className="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2"><Clock className="w-4 h-4" /> Real-Time Notifications</li>
-              <li className="bg-white/10 px-4 py-2 rounded-full flex items-center gap-2"><MapPin className="w-4 h-4" /> Interactive Campus Map</li>
-            </ul>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register">
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-4 pulse-glow shadow-xl border-2 border-white/10"
-                >
-                  Start Booking Now
-                </Button>
-              </Link>
-             <Link to="/login">
-               <Button 
-                size="lg" 
-                variant="outline" 
-                className="border-white/30 text-white hover:bg-white/10 text-lg px-8 py-4"
-              >
-                Find Venues
-              </Button>
-             </Link>
-            </div>
-          </motion.div>
-          {/* Hero Image */}
-          <motion.div
-            initial={{ opacity: 0, y: 50 }}
+            Effortless <span className="gradient-text">Venue Booking</span>
+            <span className="block text-2xl md:text-3xl font-medium text-white/70 mt-4">for Modern Campuses</span>
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="mt-16"
+            transition={{ duration: 0.9, delay: 0.1 }}
+            className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto font-medium"
           >
-            <img  
-              className="mx-auto rounded-2xl shadow-2xl floating-animation max-w-4xl w-full border-4 border-white/10"
-              alt="University of Cape Coast building at dusk"
-              src="/ucc-building.jpg" />
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            Discover, book, and manage campus venues in seconds. Real-time availability, instant notifications, and a beautiful, intuitive interface for everyone.
+          </motion.p>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <Link to="/register">
+              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-700 text-lg px-8 py-4 font-semibold shadow-xl border-2 border-white/10">
+                Start Booking
+              </Button>
+            </Link>
+            <Link to="/login">
+              <Button size="lg" variant="outline" className="border-white/20 text-white/90 hover:bg-white/10 text-lg px-8 py-4">
+                Sign In
+              </Button>
+            </Link>
+          </div>
+          {/* Quick Stats */}
+          <div className="flex flex-wrap justify-center gap-6 mt-8">
             {statsLoading ? (
               Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="text-center animate-pulse">
-                  <div className="text-4xl md:text-5xl font-bold text-white mb-2 bg-white/10 rounded h-12 w-24 mx-auto" />
-                  <div className="text-white/30 text-lg bg-white/5 rounded h-6 w-20 mx-auto mt-2" />
-                </div>
+                <div key={idx} className="w-36 h-24 bg-white/10 rounded-2xl animate-pulse" />
               ))
             ) : stats ? (
               [
-                { number: stats.venues, label: 'Venues Available' },
-                { number: stats.bookings, label: 'Bookings Made' },
-                { number: stats.users, label: 'Active Users' },
-                { number: stats.departments, label: 'Departments' }
+                { number: stats.venues, label: 'Venues', icon: <FaBuilding className="w-6 h-6 text-blue-400" /> },
+                { number: stats.bookings, label: 'Bookings', icon: <FaBookOpen className="w-6 h-6 text-purple-400" /> },
+                { number: stats.users, label: 'Users', icon: <FaUsers className="w-6 h-6 text-green-400" /> },
+                { number: stats.departments, label: 'Departments', icon: <FaUniversity className="w-6 h-6 text-pink-400" /> }
               ].map((stat, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.6, delay: index * 0.1 }}
-                  className="text-center"
+                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ duration: 0.7, delay: index * 0.12, type: 'spring' }}
+                  className="w-36 h-24 bg-white/10 rounded-2xl flex flex-col items-center justify-center shadow-xl border border-white/20 relative overflow-hidden"
+                  style={{
+                    boxShadow: '0 4px 32px 0 rgba(80, 80, 255, 0.08)',
+                    backdropFilter: 'blur(8px)',
+                  }}
                 >
-                  <div className="text-4xl md:text-5xl font-bold text-white mb-2">
-                    {stat.number}
+                  <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{
+                    background: 'linear-gradient(120deg, rgba(99,102,241,0.12) 0%, rgba(168,85,247,0.10) 100%)',
+                    zIndex: 0
+                  }} />
+                  <div className="relative z-10 flex items-center gap-2 mb-1">
+                    {stat.icon}
+                    <span className="text-2xl font-extrabold text-white drop-shadow">{stat.number}</span>
                   </div>
-                  <div className="text-white/70 text-lg">{stat.label}</div>
+                  <div className="relative z-10 text-white/80 text-sm font-semibold tracking-wide">{stat.label}</div>
+                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-full blur-2xl opacity-60" />
                 </motion.div>
               ))
             ) : null}
@@ -192,40 +175,30 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
-          <motion.div
+      <section className="py-16 px-4">
+        <div className="max-w-5xl mx-auto">
+          <motion.h2
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center mb-16"
+            className="text-3xl md:text-4xl font-bold text-white mb-10 text-center"
           >
-            <h2 className="text-5xl font-bold text-white mb-6">
-              Powerful Features
-            </h2>
-            <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              Everything you need to manage venue bookings efficiently and effectively.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+            Why ClassEase?
+          </motion.h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="dashboard-card p-8 text-center group"
+                className="bg-white/5 border border-white/10 rounded-2xl p-7 flex flex-col items-center text-center shadow-lg hover:scale-[1.03] transition-transform duration-300"
               >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full mb-6 group-hover:scale-110 transition-transform duration-300">
-                  <feature.icon className="w-8 h-8 text-white" />
+                <div className="w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-700 mb-5 shadow-lg">
+                  <feature.icon className="w-7 h-7 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-white mb-4">
-                  {feature.title}
-                </h3>
-                <p className="text-white/70 leading-relaxed">
-                  {feature.description}
-                </p>
+                <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
+                <p className="text-white/70 text-base leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -233,25 +206,25 @@ const LandingPage = () => {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20">
-        <div className="container mx-auto px-6">
+      <section className="py-16 px-4">
+        <div className="max-w-3xl mx-auto">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="dashboard-card p-12 text-center"
+            className="bg-gradient-to-br from-blue-700/60 to-purple-800/60 rounded-2xl p-12 text-center shadow-2xl border border-white/10"
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-white mb-6">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
               Ready to Get Started?
             </h2>
-            <p className="text-xl text-white/80 mb-8 max-w-2xl mx-auto">
+            <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto">
               Join thousands of users who have already transformed their venue booking experience with ClassEase.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link to="/register">
                 <Button 
                   size="lg" 
-                  className="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-lg px-8 py-4"
+                  className="bg-gradient-to-r from-blue-600 to-purple-700 text-lg px-8 py-4 font-semibold shadow-xl border-2 border-white/10"
                 >
                   Create Account
                 </Button>
@@ -260,7 +233,7 @@ const LandingPage = () => {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-white/30 text-white hover:bg-white/10 text-lg px-8 py-4"
+                  className="border-white/20 text-white/90 hover:bg-white/10 text-lg px-8 py-4"
                 >
                   Sign In
                 </Button>
@@ -271,16 +244,10 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/10">
-        <div className="container mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between">
-            <div className="text-2xl font-bold gradient-text mb-4 md:mb-0">
-              ClassEase
-            </div>
-            <div className="text-white/60">
-              © 2025 ClassEase. All rights reserved.
-            </div>
-          </div>
+      <footer className="py-10 border-t border-white/10 mt-auto">
+        <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-xl font-bold gradient-text">ClassEase</div>
+          <div className="text-white/60 text-sm">© 2025 ClassEase. All rights reserved.</div>
         </div>
       </footer>
     </div>

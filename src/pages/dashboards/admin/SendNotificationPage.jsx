@@ -110,14 +110,14 @@ const SendNotificationPage = () => {
           break;
         
         case 'specific':
-          if (!specificUserId) {
-            toast({ title: "Validation Error", description: "Please select a specific user.", variant: "destructive" });
-            return;
-          }
-          result = await addNotification({
-            title,
-            message,
-            type,
+      if (!specificUserId) {
+        toast({ title: "Validation Error", description: "Please select a specific user.", variant: "destructive" });
+        return;
+      }
+      result = await addNotification({
+        title,
+        message,
+        type,
             recipient_type: 'specific',
             recipients: [specificUserId],
             priority,
@@ -146,13 +146,13 @@ const SendNotificationPage = () => {
         default:
           toast({ title: "Error", description: "Invalid recipient type.", variant: "destructive" });
           return;
-      }
+    }
 
-      if (result?.success) {
-        setTitle('');
-        setMessage('');
-        setType('info');
-        setSpecificUserId('');
+    if (result?.success) {
+      setTitle('');
+      setMessage('');
+      setType('info');
+      setSpecificUserId('');
         setBuildingId('');
         setRoleFilter('');
         setPriority('medium');
@@ -286,15 +286,15 @@ const SendNotificationPage = () => {
 
             {/* Title and Message */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
+            <div>
                 <Label className="text-foreground">Title</Label>
-                <Input 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="Notification Title"
-                  className="mt-1 bg-background border-border focus:border-primary"
-                  required
-                />
+              <Input 
+                value={title} 
+                onChange={(e) => setTitle(e.target.value)} 
+                placeholder="Notification Title"
+                className="mt-1 bg-background border-border focus:border-primary"
+                required
+              />
               </div>
               <div>
                 <Label className="text-foreground">Type</Label>
@@ -338,22 +338,22 @@ const SendNotificationPage = () => {
                     <SelectItem value="urgent">Urgent</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
+            </div>
 
-              <div>
+            <div>
                 <Label className="text-foreground">Category</Label>
                 <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger className="w-full mt-1 bg-background border-border focus:border-primary">
+                <SelectTrigger className="w-full mt-1 bg-background border-border focus:border-primary">
                     <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-background border-border">
+                </SelectTrigger>
+                <SelectContent className="bg-background border-border">
                     <SelectItem value="announcement">Announcement</SelectItem>
                     <SelectItem value="booking">Booking</SelectItem>
                     <SelectItem value="maintenance">Maintenance</SelectItem>
                     <SelectItem value="reminder">Reminder</SelectItem>
                     <SelectItem value="system">System</SelectItem>
-                  </SelectContent>
-                </Select>
+                </SelectContent>
+              </Select>
               </div>
 
               <div>
