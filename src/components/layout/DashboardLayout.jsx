@@ -8,22 +8,20 @@ import {
   Users, 
   Settings, 
   LogOut, 
-  Bell, 
   Menu, 
   X,
   Home,
   BarChart3,
-  Clock
+  Clock,
+  Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useNotifications } from '@/contexts/NotificationContext';
+import NotificationDropdown from '@/components/ui/notification-dropdown';
 
 const DashboardLayout = ({ children, title }) => {
   const { user, logout } = useAuth();
-  const { notifications, getUnreadCount, markAsRead } = useNotifications();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -32,7 +30,8 @@ const DashboardLayout = ({ children, title }) => {
       { icon: Home, label: 'Dashboard', path: '/dashboard' },
       { icon: Calendar, label: 'Book Venue', path: '/dashboard/book' },
       { icon: Clock, label: 'My Bookings', path: '/dashboard/bookings' },
-      { icon: MapPin, label: 'Campus Map', path: '/dashboard/map' }
+      { icon: MapPin, label: 'Campus Map', path: '/dashboard/map' },
+      { icon: Bell, label: 'Notifications', path: '/dashboard/notifications' }
     ];
 
     if (user?.role === 'manager' || user?.role === 'admin') {
@@ -55,11 +54,6 @@ const DashboardLayout = ({ children, title }) => {
   const handleLogout = () => {
     logout();
     navigate('/');
-  };
-
-  const handleNotificationClick = (notification) => {
-    markAsRead(notification.id);
-    setNotificationsOpen(false);
   };
 
   const navigationItems = getNavigationItems();
@@ -159,65 +153,7 @@ const DashboardLayout = ({ children, title }) => {
             </div>
 
             {/* Notifications */}
-            <div className="relative">
-              <button
-                onClick={() => setNotificationsOpen(!notificationsOpen)}
-                className="relative p-2 text-white/70 hover:text-white transition-colors"
-              >
-                <Bell className="w-6 h-6" />
-                {getUnreadCount() > 0 && (
-                  <span className="notification-badge">
-                    {getUnreadCount()}
-                  </span>
-                )}
-              </button>
-
-              {/* Notifications Dropdown */}
-              {notificationsOpen && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="absolute right-0 mt-2 w-80 dashboard-card p-4 z-50"
-                >
-                  <h3 className="text-lg font-semibold text-white mb-4">
-                    Notifications
-                  </h3>
-                  <div className="space-y-3 max-h-64 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <p className="text-white/60 text-center py-4">
-                        No notifications
-                      </p>
-                    ) : (
-                      notifications.map((notification) => (
-                        <div
-                          key={notification.id}
-                          onClick={() => handleNotificationClick(notification)}
-                          className={`p-3 rounded-lg cursor-pointer transition-colors ${
-                            notification.read
-                              ? 'bg-white/5'
-                              : 'bg-blue-500/20 border border-blue-500/30'
-                          }`}
-                        >
-                          <div className="flex justify-between items-start">
-                            <div className="flex-1">
-                              <h4 className="text-white font-medium text-sm">
-                                {notification.title}
-                              </h4>
-                              <p className="text-white/70 text-xs mt-1">
-                                {notification.message}
-                              </p>
-                            </div>
-                            {!notification.read && (
-                              <div className="w-2 h-2 bg-blue-500 rounded-full ml-2 mt-1" />
-                            )}
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </div>
+            <NotificationDropdown />
           </div>
         </header>
 

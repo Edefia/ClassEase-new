@@ -310,14 +310,14 @@ const StudentDashboard = () => {
                 <Card className="bg-gray-800/50 backdrop-blur-sm border-gray-700 mt-6">
                   <CardHeader className="flex flex-row items-center justify-between pb-2">
                     <CardTitle className="text-white text-lg flex items-center">Suggested Venues</CardTitle>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="border-gray-600 text-white hover:bg-gray-700"
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-600 text-white hover:bg-gray-700"
                       onClick={() => setSelectedTab('findVenues')}
-                    >
-                      View All
-                    </Button>
+                      >
+                        View All
+                      </Button>
                   </CardHeader>
                   <CardContent>
                     {suggestedVenues.length === 0 ? (
@@ -353,7 +353,7 @@ const StudentDashboard = () => {
                             >
                               Book Now
                             </Button>
-                          </div>
+                              </div>
                         ))}
                       </div>
                     )}
@@ -376,30 +376,57 @@ const StudentDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-row gap-4 overflow-x-auto pb-2 hide-scrollbar">
-                      {recentBookings.slice(0, 5).map((booking) => (
-                        <div
-                          key={booking.id}
-                          className="min-w-[260px] max-w-xs bg-gray-700/60 rounded-lg p-4 border border-gray-600 flex-shrink-0 flex flex-col justify-between hover:shadow-lg transition-shadow duration-200"
-                        >
-                          <div className="flex items-center justify-between mb-2">
-                            <h4 className="text-white font-semibold truncate max-w-[120px]" title={booking.venueName}>{booking.venueName}</h4>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
-                          </div>
-                          <div className="text-gray-300 text-xs flex items-center mb-1">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {formatDate(booking.date)}
-                          </div>
-                          <div className="text-gray-300 text-xs flex items-center mb-1">
-                            <Clock className="w-3 h-3 mr-1" />
-                            {formatTime(booking.startTime)} - {formatTime(booking.endTime)}
-                          </div>
-                          {booking.status === 'declined' && booking.reasonIfDeclined && (
-                            <div className="mt-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-xs">
-                              <strong>Reason:</strong> {booking.reasonIfDeclined}
+                      {recentBookings.slice(0, 5).map((booking) => {
+                        // Robustly extract venue object and name
+                        const venueObj = booking.venue && typeof booking.venue === 'object' ? booking.venue :
+                          venuesData.find(v => v._id?.toString() === (booking.venue?._id?.toString() || booking.venue?.toString() || booking.venueId?.toString()));
+                        const venueName = venueObj?.name || 'Venue Name Missing';
+
+                        // Robustly extract date and time fields
+                        let dateStr = 'Invalid Date';
+                        let timeStr = 'Invalid Time';
+                        if (booking.date) {
+                          try {
+                            dateStr = new Date(booking.date).toLocaleDateString('en-US', {
+                              weekday: 'short', year: 'numeric', month: 'short', day: 'numeric'
+                            });
+                          } catch {}
+                        }
+                        // Try both timeStart/timeEnd and start_time/end_time
+                        const startTime = booking.timeStart || booking.start_time;
+                        const endTime = booking.timeEnd || booking.end_time;
+                        if (startTime && endTime) {
+                          try {
+                            const formatTime = (t) => new Date(`1970-01-01T${t}Z`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                            timeStr = `${formatTime(startTime)} - ${formatTime(endTime)}`;
+                          } catch {}
+                        }
+
+                        return (
+                          <div
+                            key={booking._id || booking.id}
+                            className="min-w-[260px] max-w-xs bg-gray-700/60 rounded-lg p-4 border border-gray-600 flex-shrink-0 flex flex-col justify-between hover:shadow-lg transition-shadow duration-200"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <h4 className="text-white font-semibold truncate max-w-[120px]" title={venueName}>{venueName}</h4>
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(booking.status)}`}>{booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}</span>
                             </div>
-                          )}
-                        </div>
-                      ))}
+                            <div className="text-gray-300 text-xs flex items-center mb-1">
+                              <Calendar className="w-3 h-3 mr-1" />
+                              {dateStr}
+                            </div>
+                            <div className="text-gray-300 text-xs flex items-center mb-1">
+                              <Clock className="w-3 h-3 mr-1" />
+                              {timeStr}
+                            </div>
+                            {booking.status === 'declined' && (booking.reasonIfDeclined || booking.reason_if_declined) && (
+                              <div className="mt-2 p-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-300 text-xs">
+                                <strong>Reason:</strong> {booking.reasonIfDeclined || booking.reason_if_declined}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </CardContent>
                 </Card>

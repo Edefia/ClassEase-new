@@ -7,6 +7,11 @@ const venueSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
+  type: {
+    type: String,
+    required: true,
+    default: 'Lecture Hall',
+  },
   location: {
     type: String,
     default: '',
