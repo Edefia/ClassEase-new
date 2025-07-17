@@ -21,7 +21,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const allowedOrigins = [
   'http://localhost:5173', // Vite dev
   'http://localhost:3000', // React dev
-  'https://class-ease-new.vercel.app', // Example Vercel deployment
+  'https://class-ease-new.vercel.app',
+  'https://classease.appxora.com' // Example Vercel deployment
 
 ];
 
