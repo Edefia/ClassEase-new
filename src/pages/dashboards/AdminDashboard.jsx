@@ -415,7 +415,7 @@ const AdminDashboard = () => {
                <Button variant="outline" onClick={() => setSelectedTab('settings')}>
                 <Settings className="w-4 h-4 mr-2" /> System Settings
               </Button>
-              <Button onClick={() => setSelectedTab('send-notification')}>
+              <Button className="text-slate/20" onClick={() => setSelectedTab('send-notification')}>
                 <BellPlus className="w-4 h-4 mr-2" /> Send Notification
               </Button>
             </div>

@@ -42,13 +42,13 @@ export default function FindVenuesPage({ onBookNow }) {
           value={search}
           onChange={e => setSearch(e.target.value)}
         />
-        <select className="form-input w-40" value={type} onChange={e => setType(e.target.value)}>
-          <option value="">All Types</option>
-          {types.map(t => <option key={t} value={t}>{t}</option>)}
+        <select className="form-input w-40 rounded-sm px-3" value={type} onChange={e => setType(e.target.value)}>
+          <option value="" className='bg-slate-900'>All Types</option>
+          {types.map(t => <option key={t} value={t} className='bg-slate-900'>{t}</option>)}
         </select>
-        <select className="form-input w-40" value={building} onChange={e => setBuilding(e.target.value)}>
-          <option value="">All Buildings</option>
-          {buildings.map(b => <option key={b} value={b}>{b}</option>)}
+        <select className="form-input w-40 rounded-sm px-3" value={building} onChange={e => setBuilding(e.target.value)}>
+          <option value="" className='bg-slate-900'>All Buildings</option>
+          {buildings.map(b => <option key={b} value={b} className='bg-slate-900'>{b}</option>)}
         </select>
         <Input
           className="w-32"
@@ -58,9 +58,9 @@ export default function FindVenuesPage({ onBookNow }) {
           value={minCapacity}
           onChange={e => setMinCapacity(e.target.value)}
         />
-        <select className="form-input w-40" value={amenity} onChange={e => setAmenity(e.target.value)}>
-          <option value="">All Amenities</option>
-          {amenities.map(a => <option key={a} value={a}>{a}</option>)}
+        <select className="form-input w-40 rounded-sm px-3" value={amenity} onChange={e => setAmenity(e.target.value)}>
+          <option value="" className='bg-slate-900'>All Amenities</option>
+          {amenities.map(a => <option key={a} value={a} className='bg-slate-900'>{a}</option>)}
         </select>
       </div>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">

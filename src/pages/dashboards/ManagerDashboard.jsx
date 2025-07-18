@@ -334,9 +334,9 @@ function VenuesTab({ venues, buildings, onVenueUpdated, onVenueAdded, loading })
                     className="form-input mt-2"
                     required
                   >
-                    <option value="">Select a building</option>
+                    <option value="" className='bg-slate-900'>Select a building</option>
                     {buildings.map(b => (
-                      <option key={b._id} value={b._id}>{b.name}</option>
+                      <option key={b._id} value={b._id} className='bg-slate-900'>{b.name}</option>
                     ))}
                   </select>
                 </div>

@@ -83,12 +83,43 @@ const LandingPage = () => {
                   <X className="w-7 h-7" />
                 </button>
               </div>
-              <div className="flex flex-col gap-4 px-6 py-10 text-lg">
+              <div className="flex flex-col gap-4 px-6 py-10 text-lg bg-slate-900">
+                <button
+                  className="flex items-center gap-3 w-full text-white/90 justify-start text-lg py-3 hover:bg-white/10 rounded transition"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                >
+                  <FaCalendarCheck className="w-5 h-5 text-blue-400" /> Home
+                </button>
+                <button
+                  className="flex items-center gap-3 w-full text-white/90 justify-start text-lg py-3 hover:bg-white/10 rounded transition"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    document.querySelector('#features')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <FaBookOpen className="w-5 h-5 text-purple-400" /> Features
+                </button>
+                <button
+                  className="flex items-center gap-3 w-full text-white/90 justify-start text-lg py-3 hover:bg-white/10 rounded transition"
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    document.querySelector('footer')?.scrollIntoView({ behavior: 'smooth' });
+                  }}
+                >
+                  <FaUniversity className="w-5 h-5 text-pink-400" /> Contact
+                </button>
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full text-white/90 justify-start text-lg py-3">Login</Button>
+                  <Button variant="ghost" className="w-full flex items-center gap-3 text-white/90 justify-start text-lg py-3">
+                    <FaUsers className="w-5 h-5 text-green-400" /> Login
+                  </Button>
                 </Link>
                 <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-700 text-white text-lg py-3 font-semibold">Get Started</Button>
+                  <Button className="w-full flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-700 text-white text-lg py-3 font-semibold">
+                    <FaBookOpen className="w-5 h-5 text-purple-200" /> Get Started
+                  </Button>
                 </Link>
               </div>
             </motion.div>
@@ -111,7 +142,7 @@ const LandingPage = () => {
             className="text-5xl md:text-6xl font-extrabold leading-tight mb-6 drop-shadow-xl"
           >
             Effortless <span className="gradient-text">Venue Booking</span>
-            <span className="block text-2xl md:text-3xl font-medium text-white/70 mt-4">for Modern Campuses</span>
+            <span className="block text-2xl md:text-3xl font-medium text-white/70 mt-4">for University of Cape Coast Campus</span>
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -144,7 +175,7 @@ const LandingPage = () => {
                 { number: stats.venues, label: 'Venues', icon: <FaBuilding className="w-6 h-6 text-blue-400" /> },
                 { number: stats.bookings, label: 'Bookings', icon: <FaBookOpen className="w-6 h-6 text-purple-400" /> },
                 { number: stats.users, label: 'Users', icon: <FaUsers className="w-6 h-6 text-green-400" /> },
-                { number: stats.departments, label: 'Departments', icon: <FaUniversity className="w-6 h-6 text-pink-400" /> }
+                { number: stats.buildings, label: 'Buildings', icon: <FaUniversity className="w-6 h-6 text-pink-400" /> }
               ].map((stat, index) => (
                 <motion.div
                   key={index}
@@ -175,7 +206,7 @@ const LandingPage = () => {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4">
+      <section id="features" className="py-16 px-4">
         <div className="max-w-5xl mx-auto">
           <motion.h2
             initial={{ opacity: 0, y: 30 }}
