@@ -10,6 +10,11 @@ import departmentsRoutes from './routes/departments.js';
 import buildingsRoutes from './routes/buildings.js';
 import statsRoutes from './routes/stats.js';
 import notificationRoutes from './routes/notifications.js';
+import courseRoutes from './routes/courses.js';
+import timetableRoutes from './routes/timetable.js';
+import schedulingRoutes from './routes/scheduling.js';
+import semesterRoutes from './routes/semesters.js';
+import timeslotRoutes from './routes/timeslots.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -44,6 +49,11 @@ app.use('/api/departments', departmentsRoutes);
 app.use('/api/buildings', buildingsRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/courses', courseRoutes);
+app.use('/api/timetable', timetableRoutes);
+app.use('/api/scheduling', schedulingRoutes);
+app.use('/api/semesters', semesterRoutes);
+app.use('/api/timeslots', timeslotRoutes);
 
 // DB & Server Init
 mongoose.connect(process.env.MONGO_URI)

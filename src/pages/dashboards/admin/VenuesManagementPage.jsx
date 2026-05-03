@@ -1,294 +1,270 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Edit, Trash2, Building } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { Plus, Edit2, Trash2, Search, MapPin, Wrench, Image, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import MaintenanceManager from '@/components/venue/MaintenanceManager';
 import API from '@/lib/api';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/use-toast';
 
 const VenuesManagementPage = () => {
   const [venues, setVenues] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
-    name: '',
-    type: '',
-    amenities: '', // comma-separated string
-    capacity: '',
-    status: 'Active',
-    image: '',
-    building: '',
-  });
-  const [imageFile, setImageFile] = useState(null);
-  const [formError, setFormError] = useState('');
-  const [editVenueId, setEditVenueId] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(null);
   const [buildings, setBuildings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editingItem, setEditingItem] = useState(null);
+  const [formData, setFormData] = useState({
+    name: '', type: 'Lecture Hall', capacity: '', capacityExam: '', building: '', location: '', floor: '', amenities: '',
+  });
+  const [maintenanceVenue, setMaintenanceVenue] = useState(null);
 
-  const fetchVenues = async () => {
-    setIsLoading(true);
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const res = await API.get('/venues');
-      setVenues(res.data);
-    } catch (err) {
-      setVenues([]);
-    }
-      setIsLoading(false);
+      const [vRes, bRes] = await Promise.all([API.get('/venues'), API.get('/buildings')]);
+      setVenues(vRes.data);
+      setBuildings(bRes.data);
+    } catch { setVenues([]); }
+    setLoading(false);
   };
 
-  const fetchBuildings = async () => {
-    try {
-      const res = await API.get('/buildings');
-      setBuildings(res.data);
-    } catch (err) {
-      setBuildings([]);
-    }
-  };
+  useEffect(() => { fetchData(); }, []);
 
-  useEffect(() => {
-    fetchVenues();
-    fetchBuildings();
-  }, []);
+  const filtered = venues.filter((v) => {
+    const matchesSearch = v.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesType = !typeFilter || v.type === typeFilter;
+    return matchesSearch && matchesType;
+  });
 
-  const handleFormChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setFormError('');
-  };
-  const handleImageChange = (e) => {
-    setImageFile(e.target.files[0]);
-    setFormError('');
-  };
-
-  const API_BASE = 'https://classease-new.onrender.com';
-  const PLACEHOLDER_IMAGE = '/placeholder.svg'; // Adjust if needed
-
-  const handleAddOrEditVenue = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.type || !form.capacity || !form.building) {
-      setFormError('All fields are required.');
-      return;
-    }
-    let imageUrl = form.image;
-    if (imageFile) {
-      const data = new FormData();
-      data.append('image', imageFile);
-      try {
-        const res = await API.post('/venues/upload', data, { headers: { 'Content-Type': 'multipart/form-data' } });
-        imageUrl = res.data.imageUrl;
-      } catch (err) {
-        setFormError('Image upload failed.');
-        return;
-      }
-    }
-    // Always send the current image path (even if no new image is selected)
-    const amenitiesArr = form.amenities
-      ? form.amenities.split(',').map(a => a.trim()).filter(Boolean)
-      : [];
+    const payload = {
+      ...formData,
+      capacity: Number(formData.capacity),
+      capacityExam: formData.capacityExam ? Number(formData.capacityExam) : null,
+      amenities: formData.amenities ? formData.amenities.split(',').map((a) => a.trim()) : [],
+      equipment: formData.amenities ? formData.amenities.split(',').map((a) => a.trim()) : [],
+    };
     try {
-      if (editVenueId) {
-        await API.put(`/venues/${editVenueId}`,
-          {
-            name: form.name,
-            type: form.type,
-            amenities: amenitiesArr,
-            capacity: Number(form.capacity),
-            status: form.status,
-            image: imageUrl || PLACEHOLDER_IMAGE,
-            building: form.building,
-          });
-        toast({ title: 'Venue Updated', description: 'The venue has been updated.' });
+      if (editingItem) {
+        await API.put(`/venues/${editingItem._id}`, payload);
+        toast({ title: 'Venue Updated' });
       } else {
-        await API.post('/venues', {
-          name: form.name,
-          type: form.type,
-          amenities: amenitiesArr,
-          capacity: Number(form.capacity),
-          status: form.status,
-          image: imageUrl || PLACEHOLDER_IMAGE,
-          building: form.building,
-        });
-        toast({ title: 'Venue Added', description: 'The new venue has been added.' });
+        await API.post('/venues', payload);
+        toast({ title: 'Venue Created' });
       }
-      setShowModal(false);
-      setForm({ name: '', type: '', amenities: '', capacity: '', status: 'Active', image: '', building: '' });
-      setImageFile(null);
-      setEditVenueId(null);
-      fetchVenues();
+      fetchData();
+      closeModal();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to save venue.');
+      toast({ title: 'Error', description: err.response?.data?.error || err.message, variant: 'destructive' });
     }
   };
 
-  const handleEditClick = (venue) => {
-    setForm({
-      name: venue.name || '',
-      type: venue.type || '',
-      amenities: Array.isArray(venue.amenities) ? venue.amenities.join(', ') : '',
-      capacity: venue.capacity || '',
-      status: venue.status || 'Active',
-      image: venue.image || '',
-      building: venue.building?._id || '',
-    });
-    setImageFile(null);
-    setEditVenueId(venue._id || venue.id);
-    setShowModal(true);
-    setFormError('');
-  };
-
-  const handleDeleteClick = async (venueId) => {
-    if (!window.confirm('Are you sure you want to delete this venue?')) return;
-    setDeleteLoading(venueId);
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this venue?')) return;
     try {
-      await API.delete(`/venues/${venueId}`);
-      toast({ title: 'Venue Deleted', description: 'The venue has been deleted.' });
-      fetchVenues();
+      await API.delete(`/venues/${id}`);
+      toast({ title: 'Venue Deleted' });
+      fetchData();
     } catch (err) {
-      toast({ title: 'Delete Failed', description: err.response?.data?.error || 'Failed to delete venue.', variant: 'destructive' });
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
-    setDeleteLoading(null);
   };
+
+  const toggleAvailability = async (venue) => {
+    try {
+      await API.put(`/venues/${venue._id}`, { isAvailable: !venue.isAvailable });
+      toast({ title: venue.isAvailable ? 'Venue Disabled' : 'Venue Enabled' });
+      fetchData();
+    } catch (err) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
+  const openCreate = () => {
+    setEditingItem(null);
+    setFormData({ name: '', type: 'Lecture Hall', capacity: '', capacityExam: '', building: '', location: '', floor: '', amenities: '' });
+    setShowModal(true);
+  };
+
+  const openEdit = (v) => {
+    setEditingItem(v);
+    setFormData({
+      name: v.name, type: v.type, capacity: v.capacity, capacityExam: v.capacityExam || '',
+      building: v.building?._id || v.building || '', location: v.location || '', floor: v.floor || '',
+      amenities: [...(v.equipment || []), ...(v.amenities || [])].join(', '),
+    });
+    setShowModal(true);
+  };
+
+  const closeModal = () => { setShowModal(false); setEditingItem(null); };
+
+  const venueTypes = ['Lecture Hall', 'Lab', 'Auditorium', 'Seminar Room', 'Outdoor Space', 'Other'];
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64"><div className="loading-spinner-large" /></div>;
+  }
 
   return (
-    <div className="space-y-6 w-full h-full px-0 md:px-2 py-4">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-center gap-4"
-      >
-        <h1 className="text-2xl font-semibold text-foreground flex items-center">
-          <Building className="w-6 h-6 mr-2 text-primary" /> Venues Management
-        </h1>
-        <Button onClick={() => setShowModal(true)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="w-4 h-4 mr-2" /> Add New Venue
-        </Button>
-      </motion.div>
-      {/* Add/Edit Venue Modal */}
-      <Dialog open={showModal} onOpenChange={(open) => { setShowModal(open); if (!open) { setEditVenueId(null); setForm({ name: '', type: '', amenities: '', capacity: '', status: 'Active', image: '', building: '' }); setImageFile(null); setFormError(''); } }}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editVenueId ? 'Edit Venue' : 'Add New Venue'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleAddOrEditVenue} className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input name="name" value={form.name} onChange={handleFormChange} required />
+    <div className="space-y-4">
+      {/* Filters */}
+      <div className="card-institutional p-4">
+        <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
+          <div className="flex items-center gap-3 flex-1">
+            <div className="relative flex-1 max-w-sm">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+              <input type="text" placeholder="Search venues..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input-institutional pl-10" />
             </div>
-            <div>
-              <Label>Type</Label>
-              <Input name="type" value={form.type} onChange={handleFormChange} required placeholder="e.g. Lecture Hall, Lab" />
-            </div>
-            <div>
-              <Label>Building</Label>
-              <select name="building" value={form.building} onChange={handleFormChange} required className="form-input w-full">
-                <option value="" className='bg-slate-700'>Select Building</option>
-                {buildings.map((b) => (
-                  <option key={b._id} value={b._id} className='bg-slate-700'>{b.name}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <Label>Amenities</Label>
-              <Input name="amenities" value={form.amenities} onChange={handleFormChange} placeholder="e.g. Projector, Whiteboard" />
-              <span className="text-xs text-muted-foreground">Comma-separated (e.g. Projector, Whiteboard)</span>
-            </div>
-            <div>
-              <Label>Capacity</Label>
-              <Input name="capacity" type="number" min={1} value={form.capacity} onChange={handleFormChange} required />
-            </div>
-            <div>
-              <Label>Status</Label>
-              <select name="status" value={form.status} onChange={handleFormChange} className="form-input w-full">
-                <option value="Active" className='bg-slate-700'>Active</option>
-                <option value="Inactive" className='bg-slate-700'>Inactive</option>
-              </select>
-            </div>
-            <div>
-              <Label>Image</Label>
-              <Input name="image" type="file" accept="image/*" onChange={handleImageChange} />
-              {form.image && !imageFile && (
-                <img src={form.image.startsWith('/uploads') ? `${API_BASE}${form.image}` : form.image} alt="Venue" className="mt-2 rounded w-32 h-20 object-cover border" />
-              )}
-              {imageFile && (
-                <span className="block mt-1 text-xs text-muted-foreground">{imageFile.name}</span>
-              )}
-            </div>
-            {formError && <p className="text-red-500 text-sm">{formError}</p>}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => { setShowModal(false); setEditVenueId(null); setForm({ name: '', type: '', amenities: '', capacity: '', status: 'Active', image: '', building: '' }); setImageFile(null); setFormError(''); }}>Cancel</Button>
-              <Button type="submit" className="bg-primary text-primary-foreground">{editVenueId ? 'Update Venue' : 'Add Venue'}</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-      <Card className="bg-card text-card-foreground border-border shadow-lg w-full">
-        <CardHeader>
-          <CardTitle className="text-foreground">All Venues ({venues.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="loading-spinner-large border-primary"></div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="w-full">
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-foreground">Image</TableHead>
-                    <TableHead className="text-foreground">Name</TableHead>
-                    <TableHead className="text-foreground">Type</TableHead>
-                    <TableHead className="text-foreground">Building</TableHead>
-                    <TableHead className="text-foreground">Capacity</TableHead>
-                    <TableHead className="text-foreground">Status</TableHead>
-                    <TableHead className="text-foreground text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {venues.map(venue => (
-                    <TableRow key={venue._id || venue.id} className="border-border hover:bg-muted/50">
-                      <TableCell>
-                        {venue.image ? (
-                          <img
-                            src={venue.image.startsWith('/uploads') ? `${API_BASE}${venue.image}` : venue.image}
-                            alt={venue.name}
-                            className="w-16 h-12 object-cover rounded border"
-                            onError={e => { e.target.onerror = null; e.target.src = PLACEHOLDER_IMAGE; }}
-                          />
-                        ) : (
-                          <img src={PLACEHOLDER_IMAGE} alt="No image" className="w-16 h-12 object-cover rounded border" />
-                        )}
-                      </TableCell>
-                      <TableCell className="font-medium text-foreground">{venue.name}</TableCell>
-                      
-                      <TableCell className="text-muted-foreground">{venue.type}</TableCell>
-                      <TableCell className="text-muted-foreground">{venue.building?.name || 'N/A'}</TableCell>
-                      <TableCell className="text-muted-foreground">{venue.capacity}</TableCell>
-                      <TableCell className="text-muted-foreground">{venue.status}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="outline" size="icon" onClick={() => handleEditClick(venue)}>
-                          <Edit className="w-4 h-4 text-primary" />
-                        </Button>
-                        <Button variant="outline" size="icon" onClick={() => handleDeleteClick(venue._id || venue.id)} disabled={deleteLoading === (venue._id || venue.id)}>
-                          <Trash2 className="w-4 h-4 text-orange-500" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
+            <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} className="form-input-institutional w-auto">
+              <option value="">All Types</option>
+              {venueTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </div>
+          <Button onClick={openCreate} className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white">
+            <Plus className="w-4 h-4 mr-1" /> Add Venue
+          </Button>
+        </div>
+      </div>
+
+      {/* Venues Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filtered.map((v) => (
+          <motion.div key={v._id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="card-institutional overflow-hidden">
+            {v.image ? (
+              <img
+                src={v.image.startsWith('/uploads') ? `${import.meta.env.VITE_API_URL?.replace('/api', '')}${v.image}` : v.image}
+                alt={v.name} className="w-full h-32 object-cover" onError={(e) => { e.target.style.display = 'none'; }}
+              />
+            ) : (
+              <div className="w-full h-32 bg-gray-100 flex items-center justify-center">
+                <Image className="w-8 h-8 text-gray-300" />
+              </div>
+            )}
+            <div className="p-4">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <h4 className="font-heading font-bold text-ucc-navy">{v.name}</h4>
+                  <p className="text-xs text-gray-500">{v.building?.name || 'Unknown building'}</p>
+                </div>
+                <div className="flex gap-1">
+                  <button onClick={() => openEdit(v)} className="p-1.5 rounded hover:bg-blue-50 text-blue-600"><Edit2 className="w-3.5 h-3.5" /></button>
+                  <button onClick={() => handleDelete(v._id)} className="p-1.5 rounded hover:bg-red-50 text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                </div>
+              </div>
+              <div className="flex gap-2 flex-wrap mb-3">
+                <span className="badge badge-info">{v.type}</span>
+                <span className="badge badge-info">Cap: {v.capacity}</span>
+                {v.capacityExam && <span className="badge badge-info">Exam: {v.capacityExam}</span>}
+                {!v.isAvailable && <span className="badge badge-declined">Disabled</span>}
+                {v.isUnderMaintenance && <span className="badge badge-maintenance">🔧 Maintenance</span>}
+              </div>
+              {(v.equipment?.length > 0 || v.amenities?.length > 0) && (
+                <div className="flex gap-1 flex-wrap">
+                  {[...(v.equipment || []), ...(v.amenities || [])].slice(0, 3).map((a, i) => (
+                    <span key={i} className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">{a}</span>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              )}
+              <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+                <button
+                  onClick={() => toggleAvailability(v)}
+                  className={`text-xs font-medium ${v.isAvailable ? 'text-amber-600 hover:text-amber-700' : 'text-green-600 hover:text-green-700'}`}
+                >
+                  {v.isAvailable ? 'Disable Venue' : 'Enable Venue'}
+                </button>
+                <button
+                  onClick={() => setMaintenanceVenue(v)}
+                  className="text-xs font-medium text-gray-500 hover:text-ucc-navy flex items-center gap-1"
+                >
+                  <Wrench className="w-3 h-3" /> Maintenance
+                </button>
+              </div>
             </div>
-          )}
-          {!isLoading && venues.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">No venues found.</p>
-          )}
-        </CardContent>
-      </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {filtered.length === 0 && (
+        <div className="card-institutional">
+          <div className="empty-state">
+            <MapPin className="empty-state-icon" />
+            <h3 className="empty-state-title">No Venues Found</h3>
+            <p className="empty-state-description">{searchTerm || typeFilter ? 'Try different filters.' : 'Add your first venue.'}</p>
+          </div>
+        </div>
+      )}
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={closeModal}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="card-institutional p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-heading font-bold text-ucc-navy text-lg mb-4">{editingItem ? 'Edit Venue' : 'Add Venue'}</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="form-label">Venue Name</label>
+                  <input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="form-input-institutional" required />
+                </div>
+                <div>
+                  <label className="form-label">Type</label>
+                  <select value={formData.type} onChange={(e) => setFormData({ ...formData, type: e.target.value })} className="form-input-institutional">
+                    {venueTypes.map((t) => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Building</label>
+                  <select value={formData.building} onChange={(e) => setFormData({ ...formData, building: e.target.value })} className="form-input-institutional" required>
+                    <option value="">Select Building</option>
+                    {buildings.map((b) => <option key={b._id} value={b._id}>{b.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Capacity (Lecture)</label>
+                  <input type="number" value={formData.capacity} onChange={(e) => setFormData({ ...formData, capacity: e.target.value })} className="form-input-institutional" required />
+                </div>
+                <div>
+                  <label className="form-label">Capacity (Exam)</label>
+                  <input type="number" value={formData.capacityExam} onChange={(e) => setFormData({ ...formData, capacityExam: e.target.value })} className="form-input-institutional" placeholder="Auto: 50% of lecture" />
+                </div>
+                <div>
+                  <label className="form-label">Location</label>
+                  <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })} className="form-input-institutional" placeholder="e.g., North Campus" />
+                </div>
+                <div>
+                  <label className="form-label">Floor</label>
+                  <input type="text" value={formData.floor} onChange={(e) => setFormData({ ...formData, floor: e.target.value })} className="form-input-institutional" placeholder="e.g., Ground Floor" />
+                </div>
+                <div className="col-span-2">
+                  <label className="form-label">Equipment (comma-separated)</label>
+                  <input type="text" value={formData.amenities} onChange={(e) => setFormData({ ...formData, amenities: e.target.value })} className="form-input-institutional" placeholder="Projector, AC, Whiteboard, WiFi" />
+                </div>
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
+                <Button type="submit" className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white">{editingItem ? 'Update' : 'Create'}</Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+      {/* Maintenance Modal */}
+      {maintenanceVenue && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setMaintenanceVenue(null)}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="card-institutional p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-heading font-bold text-ucc-navy text-lg">Maintenance — {maintenanceVenue.name}</h3>
+              <button onClick={() => setMaintenanceVenue(null)} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400"><X className="w-5 h-5" /></button>
+            </div>
+            <MaintenanceManager
+              venue={maintenanceVenue}
+              onUpdate={() => { fetchData(); API.get(`/venues/${maintenanceVenue._id}`).then((res) => setMaintenanceVenue(res.data)).catch(() => {}); }}
+            />
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default VenuesManagementPage; 
+export default VenuesManagementPage;

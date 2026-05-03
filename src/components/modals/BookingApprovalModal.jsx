@@ -1,249 +1,141 @@
-
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, Users, CheckCircle, XCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { X, Calendar, Clock, MapPin, User, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useBooking } from '@/contexts/BookingContext';
-import { useAuth } from '@/contexts/AuthContext';
 
-const BookingApprovalModal = ({ isOpen, onClose, booking }) => {
-  const { updateBookingStatus, isLoading, venues, bookings, fetchBookings } = useBooking();
-  const { user } = useAuth();
-  const [declineReason, setDeclineReason] = useState('');
-  const [showDeclineForm, setShowDeclineForm] = useState(false);
+const BookingApprovalModal = ({ isOpen, booking, onClose, onApprove, onDecline }) => {
+  const [reason, setReason] = useState('');
+  const [action, setAction] = useState(null); // 'approve' or 'decline'
 
-  if (!booking) return null;
+  if (!isOpen || !booking) return null;
 
-  const API_BASE_URL = 'https://classease-new.onrender.com';
-  const PLACEHOLDER_IMAGE = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=400&q=80';
-
-  // Robust venue lookup
-  const venue = venues.find(v =>
-    v._id === (booking.venue?._id || booking.venueId || booking.venue || booking.venue_id || v.id)
-    || v.id === (booking.venue?._id || booking.venueId || booking.venue || booking.venue_id)
-  );
-
-  // Robust image path
-  const imageSrc = venue && venue.image ? (venue.image.startsWith('/uploads') ? `${API_BASE_URL}${venue.image}` : venue.image) : PLACEHOLDER_IMAGE;
-
-  // Count bookings for this venue
-  const venueBookingsCount = bookings.filter(b => (b.venue?._id || b.venue) === (venue?._id || venue?.id)).length;
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—';
+  const formatTime = (t) => {
+    try { return new Date(`1970-01-01T${t}Z`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }); }
+    catch { return t || '—'; }
   };
 
-  const formatTime = (timeString) => {
-    return new Date(`2000-01-01T${timeString}`).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+  const handleApprove = () => {
+    onApprove();
+    setAction(null);
+    setReason('');
   };
 
-  const handleApprove = async () => {
-    const result = await updateBookingStatus(booking._id || booking.id, 'approved', user.name);
-    if (result.success) {
-      await fetchBookings();
-      onClose();
-    }
-  };
-
-  const handleDecline = async () => {
-    if (!declineReason.trim()) {
-      return;
-    }
-    
-    const result = await updateBookingStatus(booking._id || booking.id, 'declined', user.name, declineReason);
-    if (result.success) {
-      await fetchBookings();
-      setDeclineReason('');
-      setShowDeclineForm(false);
-      onClose();
-    }
+  const handleDecline = () => {
+    onDecline(reason);
+    setAction(null);
+    setReason('');
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="dashboard-card border-0 max-w-2xl max-h-[90vh] overflow-y-auto custom-scrollbar">
-        <DialogHeader>
-          <DialogTitle className="text-white text-2xl font-bold">
-            Review Booking Request
-          </DialogTitle>
-        </DialogHeader>
+    <AnimatePresence>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          exit={{ opacity: 0, scale: 0.95 }}
+          className="card-institutional p-6 w-full max-w-md mx-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="font-heading font-bold text-ucc-navy text-lg">Review Booking</h3>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-gray-100 text-gray-400">
+              <X className="w-5 h-5" />
+            </button>
+          </div>
 
-        <div className="space-y-6">
           {/* Booking Details */}
-          <div className="p-6 rounded-lg bg-white/5 border border-white/10">
-            <div className="flex items-start space-x-4">
-              {venue && (
-                <img  
-                  className="w-24 h-24 object-cover rounded-lg"
-                  alt={`${venue.name} venue`}
-                 src={imageSrc} />
-              )}
-              <div className="flex-1">
-                <h3 className="text-white font-semibold text-xl mb-2">
-                  {booking.venueName || venue?.name}
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center text-white/70">
-                    <Users className="w-5 h-5 mr-3" />
-                    <span>Requested by: <strong className="text-white">{booking.userName || booking.user?.name || booking.user?.email || 'N/A'}</strong></span>
-                  </div>
-                  <div className="flex items-center text-white/70">
-                    <span className="mr-2">Purpose:</span>
-                    <span className="text-white/80">{booking.purpose || 'N/A'}</span>
-                  </div>
-                  <div className="flex items-center text-white/70">
-                    <Calendar className="w-5 h-5 mr-3" />
-                    <span>{formatDate(booking.date)}</span>
-                  </div>
-                  <div className="flex items-center text-white/70">
-                    <Clock className="w-5 h-5 mr-3" />
-                    <span>{formatTime(booking.startTime || booking.timeStart)} - {formatTime(booking.endTime || booking.timeEnd)}</span>
-                  </div>
-                  {venue && (
-                    <div className="flex items-center text-white/70">
-                      <MapPin className="w-5 h-5 mr-3" />
-                      <span>{venue.location} • Capacity: {venue.capacity}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center text-white/70">
-                    <span className="mr-2">Total bookings for this venue:</span>
-                    <span className="text-white font-bold">{venueBookingsCount}</span>
-                  </div>
-                </div>
+          <div className="space-y-4 mb-6">
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+              <User className="w-4 h-4 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-ucc-navy">{booking.user?.name || 'Unknown'}</p>
+                <p className="text-xs text-gray-500">{booking.user?.email || ''} • {booking.user?.role?.replace('_', ' ')}</p>
               </div>
             </div>
-          </div>
 
-          {/* Purpose */}
-          <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-            <h4 className="text-white font-semibold mb-2">Purpose of Booking</h4>
-            <p className="text-white/80">{booking.purpose}</p>
-          </div>
-
-          {/* Venue Amenities */}
-          {venue && (
-            <div className="p-4 rounded-lg bg-white/5 border border-white/10">
-              <h4 className="text-white font-semibold mb-3">Available Amenities</h4>
-              <div className="flex flex-wrap gap-2">
-                {venue.amenities.map((amenity, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-white/10 rounded-full text-white/80 text-sm"
-                  >
-                    {amenity}
-                  </span>
-                ))}
+            <div className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+              <MapPin className="w-4 h-4 text-gray-400" />
+              <div>
+                <p className="text-sm font-medium text-ucc-navy">{booking.venue?.name || 'Unknown Venue'}</p>
+                <p className="text-xs text-gray-500">{booking.venue?.type} • Cap: {booking.venue?.capacity}</p>
               </div>
             </div>
-          )}
 
-          {/* Decline Reason Form */}
-          {showDeclineForm && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="p-4 rounded-lg bg-red-500/10 border border-red-500/30"
-            >
-              <h4 className="text-white font-semibold mb-3">Reason for Declining</h4>
-              <textarea
-                value={declineReason}
-                onChange={(e) => setDeclineReason(e.target.value)}
-                className="form-input w-full min-h-[100px] resize-none"
-                placeholder="Please provide a reason for declining this booking request..."
-              />
-            </motion.div>
-          )}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-gray-50">
+                <Calendar className="w-4 h-4 text-gray-400" />
+                <span className="text-sm">{formatDate(booking.date)}</span>
+              </div>
+              <div className="flex items-center gap-2 p-3 rounded-lg bg-gray-50">
+                <Clock className="w-4 h-4 text-gray-400" />
+                <span className="text-sm">{formatTime(booking.timeStart)} – {formatTime(booking.timeEnd)}</span>
+              </div>
+            </div>
 
-          {/* Action Buttons */}
-          <div className="flex space-x-4 pt-4">
-            {!showDeclineForm ? (
-              <>
-                <Button
-                  onClick={() => setShowDeclineForm(true)}
-                  variant="outline"
-                  className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10"
-                  disabled={isLoading}
-                >
-                  <XCircle className="w-4 h-4 mr-2" />
-                  Decline
-                </Button>
-                <Button
-                  onClick={handleApprove}
-                  className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="loading-spinner mr-2"></div>
-                      Approving...
-                    </div>
-                  ) : (
-                    <>
-                      <CheckCircle className="w-4 h-4 mr-2" />
-                      Approve
-                    </>
-                  )}
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button
-                  onClick={() => {
-                    setShowDeclineForm(false);
-                    setDeclineReason('');
-                  }}
-                  variant="outline"
-                  className="flex-1 border-white/30 text-white hover:bg-white/10"
-                  disabled={isLoading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleDecline}
-                  className="flex-1 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-                  disabled={isLoading || !declineReason.trim()}
-                >
-                  {isLoading ? (
-                    <div className="flex items-center justify-center">
-                      <div className="loading-spinner mr-2"></div>
-                      Declining...
-                    </div>
-                  ) : (
-                    <>
-                      <XCircle className="w-4 h-4 mr-2" />
-                      Confirm Decline
-                    </>
-                  )}
-                </Button>
-              </>
+            <div className="p-3 rounded-lg bg-gray-50">
+              <p className="text-xs text-gray-500 mb-1">Purpose</p>
+              <p className="text-sm text-ucc-navy">{booking.purpose}</p>
+            </div>
+
+            {booking.isExternal && (
+              <div className="p-3 rounded-lg bg-purple-50 border border-purple-100">
+                <span className="badge badge-external mb-1">External Booking</span>
+                <p className="text-sm text-gray-700">{booking.externalOrgName}</p>
+                <p className="text-xs text-gray-500">{booking.externalContactEmail}</p>
+              </div>
+            )}
+
+            {booking.status !== 'pending' && (
+              <div className={`p-3 rounded-lg ${booking.status === 'approved' ? 'bg-green-50' : 'bg-red-50'}`}>
+                <span className={booking.status === 'approved' ? 'badge badge-approved' : 'badge badge-declined'}>
+                  {booking.status?.charAt(0).toUpperCase() + booking.status?.slice(1)}
+                </span>
+                {booking.reasonIfDeclined && <p className="text-sm text-red-700 mt-2">{booking.reasonIfDeclined}</p>}
+              </div>
             )}
           </div>
-        </div>
-      </DialogContent>
-      <style jsx global>{`
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-    background: transparent;
-  }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #6366f1 0%, #a21caf 100%);
-    border-radius: 8px;
-  }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
-  }
-`}</style>
-    </Dialog>
+
+          {/* Actions (only for pending) */}
+          {booking.status === 'pending' && (
+            <div className="space-y-3">
+              {action === 'decline' ? (
+                <div>
+                  <label className="form-label">Reason for Declining</label>
+                  <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    className="form-input-institutional"
+                    rows={3}
+                    placeholder="Provide a reason..."
+                  />
+                  <div className="flex gap-3 mt-3">
+                    <Button variant="outline" onClick={() => setAction(null)} className="flex-1">Back</Button>
+                    <Button onClick={handleDecline} className="flex-1 bg-red-600 hover:bg-red-700 text-white">
+                      <XCircle className="w-4 h-4 mr-1" /> Confirm Decline
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex gap-3">
+                  <Button onClick={() => setAction('decline')} variant="outline" className="flex-1 border-red-200 text-red-600 hover:bg-red-50">
+                    <XCircle className="w-4 h-4 mr-1" /> Decline
+                  </Button>
+                  <Button onClick={handleApprove} className="flex-1 bg-green-600 hover:bg-green-700 text-white">
+                    <CheckCircle className="w-4 h-4 mr-1" /> Approve
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {booking.status !== 'pending' && (
+            <Button variant="outline" onClick={onClose} className="w-full">Close</Button>
+          )}
+        </motion.div>
+      </div>
+    </AnimatePresence>
   );
 };
 

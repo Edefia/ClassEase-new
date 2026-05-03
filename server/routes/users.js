@@ -25,9 +25,14 @@ router.get('/', verifyToken, requireAdmin, async (req, res) => {
 router.put('/:id', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { name, email, role, department } = req.body;
+    // Normalize role: replace spaces with underscores and lowercase
+    const normalizedRole = role ? role.toLowerCase().replace(/\s+/g, '_') : undefined;
+    const updateData = { name, email, department };
+    if (normalizedRole) updateData.role = normalizedRole;
+
     const updated = await User.findByIdAndUpdate(
       req.params.id,
-      { name, email, role, department },
+      updateData,
       { new: true, runValidators: true }
     ).select('-passwordHash');
     if (!updated) return res.status(404).json({ error: 'User not found' });
@@ -52,8 +57,9 @@ router.delete('/:id', verifyToken, requireAdmin, async (req, res) => {
 router.post('/', verifyToken, requireAdmin, async (req, res) => {
   try {
     const { name, email, password, role, department } = req.body;
+    const normalizedRole = role ? role.toLowerCase().replace(/\s+/g, '_') : 'student';
     const hashed = await import('bcryptjs').then(b => b.hash(password, 10));
-    const user = await User.create({ name, email, passwordHash: hashed, role, department });
+    const user = await User.create({ name, email, passwordHash: hashed, role: normalizedRole, department });
     res.status(201).json({ message: 'User created', user: { ...user.toObject(), passwordHash: undefined } });
   } catch (err) {
     res.status(400).json({ error: err.message });

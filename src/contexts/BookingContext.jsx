@@ -45,7 +45,15 @@ export const BookingProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const res = await API.get('/bookings');
-      setBookings(res.data);
+      // Handle both paginated { bookings: [] } and legacy flat array responses
+      const data = res.data;
+      if (Array.isArray(data)) {
+        setBookings(data);
+      } else if (data && Array.isArray(data.bookings)) {
+        setBookings(data.bookings);
+      } else {
+        setBookings([]);
+      }
     } catch (err) {
       setBookings([]);
     }

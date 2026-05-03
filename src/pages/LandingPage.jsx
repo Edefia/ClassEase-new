@@ -1,33 +1,59 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { Calendar, MapPin, Users, Clock, Shield, Zap, Menu, X } from 'lucide-react';
-import { FaCalendarCheck, FaBuilding, FaBookOpen, FaUsers, FaUniversity } from 'react-icons/fa';
+import {
+  Calendar, MapPin, Users, Clock, Shield, Zap, Menu, X,
+  GraduationCap, BookOpen, Building, CheckCircle, ArrowRight,
+  ChevronRight
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import API from '@/lib/api';
+import { statsService } from '@/lib/api';
 
 const features = [
-  { icon: Calendar, title: 'Instant Booking', description: 'Book venues in seconds with real-time availability.' },
-  { icon: MapPin, title: 'Campus Map', description: 'Find and explore all venues on an interactive map.' },
-  { icon: Users, title: 'Role Dashboards', description: 'Personalized dashboards for students, staff, and admins.' },
-  { icon: Clock, title: 'Live Notifications', description: 'Get notified instantly about bookings and updates.' },
-  { icon: Shield, title: 'Secure', description: 'Enterprise-grade security and privacy.' },
-  { icon: Zap, title: 'Lightning Fast', description: 'Modern UI with smooth, responsive performance.' }
+  {
+    icon: Calendar,
+    title: 'Smart Booking',
+    description: 'Reserve lecture halls, labs, and auditoriums with real-time availability and conflict detection.',
+  },
+  {
+    icon: Clock,
+    title: 'Academic Scheduling',
+    description: 'Generate lecture timetables and exam schedules with automatic venue allocation.',
+  },
+  {
+    icon: MapPin,
+    title: 'Venue Discovery',
+    description: 'Find the perfect venue with smart suggestions based on capacity, equipment, and availability.',
+  },
+  {
+    icon: Users,
+    title: 'Role-Based Access',
+    description: 'Personalized dashboards for students, lecturers, coordinators, managers, and administrators.',
+  },
+  {
+    icon: Shield,
+    title: 'Clash Detection',
+    description: 'Automatic detection of scheduling conflicts across venues, lecturers, and student groups.',
+  },
+  {
+    icon: Zap,
+    title: 'Real-Time Updates',
+    description: 'Instant notifications for booking approvals, schedule changes, and maintenance alerts.',
+  },
 ];
 
 const LandingPage = () => {
-  const [stats, setStats] = React.useState(null);
-  const [statsLoading, setStatsLoading] = React.useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [stats, setStats] = useState(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const fetchStats = async () => {
       try {
         setStatsLoading(true);
-        const res = await API.get('/stats');
+        const res = await statsService.getAll();
         setStats(res.data);
-      } catch (err) {
+      } catch {
         setStats(null);
       } finally {
         setStatsLoading(false);
@@ -37,29 +63,46 @@ const LandingPage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0a0e1a] via-[#181c2a] to-[#10121a] text-white flex flex-col">
-      {/* Navigation */}
-      <nav className="w-full z-50 px-6 md:px-20 py-4 flex items-center justify-between glass-effect fixed top-0 left-0">
-        <div className="flex items-center gap-2">
-          <FaCalendarCheck className="w-6 h-6 text-blue-400 drop-shadow" />
-          <span className="text-2xl font-serif tracking-wider items-center text-slate-200 drop-shadow-lg">ClassEase</span>
+    <div className="min-h-screen bg-white flex flex-col">
+      {/* ===== NAVIGATION ===== */}
+      <nav className="w-full z-50 px-6 md:px-12 lg:px-20 py-4 flex items-center justify-between bg-white border-b border-gray-100 fixed top-0 left-0">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 bg-ucc-crimson rounded-lg flex items-center justify-center">
+            <GraduationCap className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <span className="text-xl font-heading font-bold text-ucc-navy tracking-tight">ClassEase</span>
+            <span className="hidden sm:block text-[10px] text-gray-400 font-medium -mt-0.5">University of Cape Coast</span>
+          </div>
         </div>
-        <div className="hidden md:flex items-center gap-2">
+
+        {/* Desktop nav */}
+        <div className="hidden md:flex items-center gap-4">
+          <a href="#features" className="text-sm font-medium text-gray-600 hover:text-ucc-navy transition-colors">Features</a>
+          <a href="#about" className="text-sm font-medium text-gray-600 hover:text-ucc-navy transition-colors">About</a>
+          <div className="w-px h-5 bg-gray-200 mx-2" />
           <Link to="/login">
-            <Button variant="ghost" className="text-white/80 hover:bg-white/10 px-5">Login</Button>
+            <Button variant="ghost" className="text-ucc-navy hover:bg-gray-100 font-medium">
+              Sign In
+            </Button>
           </Link>
           <Link to="/register">
-            <Button className="bg-gradient-to-r from-blue-600 to-purple-700 text-white px-5 font-semibold shadow-lg">Get Started</Button>
+            <Button className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white font-semibold px-5">
+              Get Started
+              <ArrowRight className="w-4 h-4 ml-1" />
+            </Button>
           </Link>
         </div>
-        {/* Hamburger for mobile */}
+
+        {/* Mobile hamburger */}
         <button
-          className="md:hidden p-2 rounded text-white/80 hover:bg-white/10 focus:outline-none"
+          className="md:hidden p-2 rounded-lg hover:bg-gray-100 text-gray-600"
           onClick={() => setMobileMenuOpen(true)}
           aria-label="Open menu"
         >
-          <Menu className="w-7 h-7" />
+          <Menu className="w-6 h-6" />
         </button>
+
         {/* Mobile Menu */}
         <AnimatePresence>
           {mobileMenuOpen && (
@@ -67,58 +110,53 @@ const LandingPage = () => {
               initial={{ x: '100%' }}
               animate={{ x: 0 }}
               exit={{ x: '100%' }}
-              transition={{ type: 'tween', duration: 0.3 }}
-              className="fixed inset-0 z-50 bg-black/90 backdrop-blur-lg flex flex-col"
+              transition={{ type: 'tween', duration: 0.25 }}
+              className="fixed inset-0 z-50 bg-white flex flex-col"
             >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-white/10">
+              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <FaCalendarCheck className="w-8 h-8 text-blue-400 drop-shadow" />
-                  <span className="text-2xl font-serif tracking-wider items-center text-slate-200 drop-shadow-lg">ClassEase</span>
+                  <div className="w-8 h-8 bg-ucc-crimson rounded-lg flex items-center justify-center">
+                    <GraduationCap className="w-4 h-4 text-white" />
+                  </div>
+                  <span className="text-lg font-heading font-bold text-ucc-navy">ClassEase</span>
                 </div>
                 <button
-                  className="p-2 rounded text-white/80 hover:bg-white/10 focus:outline-none"
+                  className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
                   onClick={() => setMobileMenuOpen(false)}
                   aria-label="Close menu"
                 >
-                  <X className="w-7 h-7" />
+                  <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="flex flex-col gap-4 px-6 py-10 text-lg bg-slate-900">
+              <div className="flex flex-col gap-1 px-6 py-6">
                 <button
-                  className="flex items-center gap-3 w-full text-white/90 justify-start text-lg py-3 hover:bg-white/10 rounded transition"
+                  className="flex items-center gap-3 w-full text-gray-700 py-3 px-3 hover:bg-gray-50 rounded-lg transition text-left"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                   }}
                 >
-                  <FaCalendarCheck className="w-5 h-5 text-blue-400" /> Home
+                  <GraduationCap className="w-5 h-5 text-ucc-crimson" /> Home
                 </button>
                 <button
-                  className="flex items-center gap-3 w-full text-white/90 justify-start text-lg py-3 hover:bg-white/10 rounded transition"
+                  className="flex items-center gap-3 w-full text-gray-700 py-3 px-3 hover:bg-gray-50 rounded-lg transition text-left"
                   onClick={() => {
                     setMobileMenuOpen(false);
                     document.querySelector('#features')?.scrollIntoView({ behavior: 'smooth' });
                   }}
                 >
-                  <FaBookOpen className="w-5 h-5 text-purple-400" /> Features
+                  <BookOpen className="w-5 h-5 text-ucc-navy" /> Features
                 </button>
-                <button
-                  className="flex items-center gap-3 w-full text-white/90 justify-start text-lg py-3 hover:bg-white/10 rounded transition"
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    document.querySelector('footer')?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                >
-                  <FaUniversity className="w-5 h-5 text-pink-400" /> Contact
-                </button>
+                <div className="border-t border-gray-100 my-3" />
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="ghost" className="w-full flex items-center gap-3 text-white/90 justify-start text-lg py-3">
-                    <FaUsers className="w-5 h-5 text-green-400" /> Login
+                  <Button variant="outline" className="w-full justify-start border-gray-200 text-ucc-navy font-medium py-3">
+                    Sign In
                   </Button>
                 </Link>
-                <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                  <Button className="w-full flex items-center gap-3 bg-gradient-to-r from-blue-600 to-purple-700 text-white text-lg py-3 font-semibold">
-                    <FaBookOpen className="w-5 h-5 text-purple-200" /> Get Started
+                <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="mt-2">
+                  <Button className="w-full bg-ucc-crimson hover:bg-ucc-crimson-600 text-white font-semibold py-3">
+                    Create Account
+                    <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
                 </Link>
               </div>
@@ -127,158 +165,188 @@ const LandingPage = () => {
         </AnimatePresence>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative flex-1 flex items-center justify-center min-h-screen pt-24 pb-12 px-4">
-        {/* Decorative Blobs */}
-        <div className="absolute inset-0 pointer-events-none z-0">
-          <div className="absolute -top-40 -left-40 w-[32rem] h-[32rem] bg-gradient-to-br from-blue-600/30 to-purple-700/20 rounded-full blur-3xl animate-pulse-slow" />
-          <div className="absolute bottom-0 right-0 w-[24rem] h-[24rem] bg-gradient-to-tr from-purple-700/30 to-blue-600/10 rounded-full blur-2xl animate-pulse-slow" />
+      {/* ===== HERO SECTION ===== */}
+      <section className="relative pt-28 pb-16 sm:pt-36 sm:pb-24 px-6 md:px-12 lg:px-20">
+        {/* Subtle background pattern */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-0 right-0 w-[600px] h-[600px] bg-ucc-gold-100/30 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3" />
+          <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-ucc-crimson-50/40 rounded-full blur-3xl translate-y-1/2 -translate-x-1/4" />
         </div>
-        <div className="relative z-10 w-full max-w-3xl mx-auto text-center flex flex-col items-center justify-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
+
+        <div className="relative max-w-5xl mx-auto text-center">
+          {/* Badge */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-5xl md:text-6xl font-extrabold leading-tight mb-6 drop-shadow-xl"
+            className="inline-flex items-center gap-2 bg-ucc-navy/5 border border-ucc-navy/10 rounded-full px-4 py-1.5 mb-6"
           >
-            Effortless <span className="gradient-text">Venue Booking</span>
-            <span className="block text-2xl md:text-3xl font-medium text-white/70 mt-4">for University of Cape Coast Campus</span>
-          </motion.h1>
-          <motion.p
+            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+            <span className="text-sm font-medium text-ucc-navy">University of Cape Coast Scheduling Platform</span>
+          </motion.div>
+
+          <motion.h1
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.9, delay: 0.1 }}
-            className="text-lg md:text-xl text-white/80 mb-8 max-w-2xl mx-auto font-medium"
+            transition={{ duration: 0.6, delay: 0.1 }}
+            className="text-4xl sm:text-5xl lg:text-6xl font-heading font-extrabold text-ucc-navy leading-tight mb-6"
           >
-            Discover, book, and manage campus venues in seconds. Real-time availability, instant notifications, and a beautiful, intuitive interface for everyone.
+            Smart Venue Booking &{' '}
+            <span className="text-ucc-crimson">Academic Scheduling</span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto mb-10 leading-relaxed"
+          >
+            Book venues, generate lecture timetables, and schedule examinations — all in one platform designed for the University of Cape Coast community.
           </motion.p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+
+          <motion.div
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
+          >
             <Link to="/register">
-              <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-700 text-lg px-8 py-4 font-semibold shadow-xl border-2 border-white/10">
+              <Button size="lg" className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white text-lg px-8 py-6 font-semibold shadow-lg shadow-ucc-crimson/20">
                 Start Booking
+                <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
             <Link to="/login">
-              <Button size="lg" variant="outline" className="border-white/20 text-white/90 hover:bg-white/10 text-lg px-8 py-4">
+              <Button size="lg" variant="outline" className="border-ucc-navy/20 text-ucc-navy hover:bg-ucc-navy/5 text-lg px-8 py-6 font-medium">
                 Sign In
               </Button>
             </Link>
-          </div>
-          {/* Quick Stats */}
-          <div className="flex flex-wrap justify-center gap-6 mt-8">
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+            className="flex flex-wrap justify-center gap-6 sm:gap-10"
+          >
             {statsLoading ? (
               Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="w-36 h-24 bg-white/10 rounded-2xl animate-pulse" />
+                <div key={idx} className="w-28 h-20 bg-gray-100 rounded-xl animate-pulse" />
               ))
             ) : stats ? (
               [
-                { number: stats.venues, label: 'Venues', icon: <FaBuilding className="w-6 h-6 text-blue-400" /> },
-                { number: stats.bookings, label: 'Bookings', icon: <FaBookOpen className="w-6 h-6 text-purple-400" /> },
-                { number: stats.users, label: 'Users', icon: <FaUsers className="w-6 h-6 text-green-400" /> },
-                { number: stats.buildings, label: 'Buildings', icon: <FaUniversity className="w-6 h-6 text-pink-400" /> }
+                { number: stats.venues || 0, label: 'Venues', icon: Building },
+                { number: stats.bookings || 0, label: 'Bookings', icon: Calendar },
+                { number: stats.users || 0, label: 'Users', icon: Users },
+                { number: stats.buildings || 0, label: 'Buildings', icon: MapPin },
               ].map((stat, index) => (
                 <motion.div
                   key={index}
-                  initial={{ opacity: 0, y: 30, scale: 0.9 }}
-                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
-                  transition={{ duration: 0.7, delay: index * 0.12, type: 'spring' }}
-                  className="w-36 h-24 bg-white/10 rounded-2xl flex flex-col items-center justify-center shadow-xl border border-white/20 relative overflow-hidden"
-                  style={{
-                    boxShadow: '0 4px 32px 0 rgba(80, 80, 255, 0.08)',
-                    backdropFilter: 'blur(8px)',
-                  }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: 0.5 + index * 0.1 }}
+                  className="text-center"
                 >
-                  <div className="absolute inset-0 rounded-2xl pointer-events-none" style={{
-                    background: 'linear-gradient(120deg, rgba(99,102,241,0.12) 0%, rgba(168,85,247,0.10) 100%)',
-                    zIndex: 0
-                  }} />
-                  <div className="relative z-10 flex items-center gap-2 mb-1">
-                    {stat.icon}
-                    <span className="text-2xl font-extrabold text-white drop-shadow">{stat.number}</span>
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <stat.icon className="w-4 h-4 text-ucc-crimson" />
+                    <span className="text-2xl sm:text-3xl font-heading font-bold text-ucc-navy">{stat.number}</span>
                   </div>
-                  <div className="relative z-10 text-white/80 text-sm font-semibold tracking-wide">{stat.label}</div>
-                  <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-gradient-to-br from-blue-500/30 to-purple-500/20 rounded-full blur-2xl opacity-60" />
+                  <span className="text-sm text-gray-500 font-medium">{stat.label}</span>
                 </motion.div>
               ))
             ) : null}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* Features Section */}
-      <section id="features" className="py-16 px-4">
-        <div className="max-w-5xl mx-auto">
-          <motion.h2
-            initial={{ opacity: 0, y: 30 }}
+      {/* ===== FEATURES SECTION ===== */}
+      <section id="features" className="py-16 sm:py-24 px-6 md:px-12 lg:px-20 bg-gray-50/50">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-3xl md:text-4xl font-bold text-white mb-10 text-center"
+            viewport={{ once: true }}
+            className="text-center mb-12"
           >
-            Why ClassEase?
-          </motion.h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <h2 className="text-3xl sm:text-4xl font-heading font-bold text-ucc-navy mb-4">
+              Everything You Need
+            </h2>
+            <p className="text-gray-600 text-lg max-w-2xl mx-auto">
+              A complete scheduling platform designed for the academic needs of UCC.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {features.map((feature, index) => (
               <motion.div
                 key={index}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: index * 0.1 }}
-                className="bg-white/5 border border-white/10 rounded-2xl p-7 flex flex-col items-center text-center shadow-lg hover:scale-[1.03] transition-transform duration-300"
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08 }}
+                className="bg-white rounded-xl p-6 border border-gray-100 shadow-card hover:shadow-card-hover transition-shadow duration-300"
               >
-                <div className="w-14 h-14 flex items-center justify-center rounded-full bg-gradient-to-br from-blue-600 to-purple-700 mb-5 shadow-lg">
-                  <feature.icon className="w-7 h-7 text-white" />
+                <div className="w-11 h-11 rounded-lg bg-ucc-navy/5 flex items-center justify-center mb-4">
+                  <feature.icon className="w-5 h-5 text-ucc-crimson" />
                 </div>
-                <h3 className="text-xl font-bold text-white mb-2">{feature.title}</h3>
-                <p className="text-white/70 text-base leading-relaxed">{feature.description}</p>
+                <h3 className="text-lg font-heading font-bold text-ucc-navy mb-2">{feature.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{feature.description}</p>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 px-4">
-        <div className="max-w-3xl mx-auto">
+      {/* ===== ABOUT / CTA SECTION ===== */}
+      <section id="about" className="py-16 sm:py-24 px-6 md:px-12 lg:px-20">
+        <div className="max-w-4xl mx-auto">
           <motion.div
-            initial={{ opacity: 0, y: 30 }}
+            initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="bg-gradient-to-br from-blue-700/60 to-purple-800/60 rounded-2xl p-12 text-center shadow-2xl border border-white/10"
+            viewport={{ once: true }}
+            className="bg-ucc-navy rounded-2xl p-8 sm:p-12 text-center relative overflow-hidden"
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">
-              Ready to Get Started?
-            </h2>
-            <p className="text-lg text-white/80 mb-8 max-w-xl mx-auto">
-              Join thousands of users who have already transformed their venue booking experience with ClassEase.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/register">
-                <Button 
-                  size="lg" 
-                  className="bg-gradient-to-r from-blue-600 to-purple-700 text-lg px-8 py-4 font-semibold shadow-xl border-2 border-white/10"
-                >
-                  Create Account
-                </Button>
-              </Link>
-              <Link to="/login">
-                <Button 
-                  size="lg" 
-                  variant="outline" 
-                  className="border-white/20 text-white/90 hover:bg-white/10 text-lg px-8 py-4"
-                >
-                  Sign In
-                </Button>
-              </Link>
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-40 h-40 bg-ucc-crimson/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 left-0 w-32 h-32 bg-ucc-gold/10 rounded-full blur-3xl" />
+
+            <div className="relative">
+              <h2 className="text-2xl sm:text-3xl font-heading font-bold text-white mb-4">
+                Ready to Get Started?
+              </h2>
+              <p className="text-white/70 text-lg mb-8 max-w-xl mx-auto">
+                Join the University of Cape Coast community on ClassEase. Book venues, manage schedules, and streamline your academic planning.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link to="/register">
+                  <Button size="lg" className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white text-lg px-8 py-5 font-semibold">
+                    Create Account
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </Link>
+                <Link to="/login">
+                  <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-lg px-8 py-5 font-medium">
+                    Sign In
+                  </Button>
+                </Link>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="py-10 border-t border-white/10 mt-auto">
-        <div className="max-w-5xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="text-xl font-bold gradient-text">ClassEase</div>
-          <div className="text-white/60 text-sm">© 2025 ClassEase. All rights reserved.</div>
+      {/* ===== FOOTER ===== */}
+      <footer className="py-8 border-t border-gray-100 mt-auto bg-white">
+        <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-ucc-crimson rounded flex items-center justify-center">
+              <GraduationCap className="w-4 h-4 text-white" />
+            </div>
+            <span className="font-heading font-bold text-ucc-navy">ClassEase</span>
+          </div>
+          <div className="text-gray-400 text-sm">
+            © {new Date().getFullYear()} ClassEase — University of Cape Coast. All rights reserved.
+          </div>
         </div>
       </footer>
     </div>

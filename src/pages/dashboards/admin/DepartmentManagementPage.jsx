@@ -1,181 +1,152 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { Plus, Edit2, Trash2, GraduationCap, Users } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Edit, Trash2, Plus } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { motion } from 'framer-motion';
 
 const DepartmentManagementPage = () => {
   const [departments, setDepartments] = useState([]);
-  const [isLoading, setIsLoading] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
-  const [editDeptId, setEditDeptId] = useState(null);
-  const [form, setForm] = useState({ name: '', code: '', description: '' });
-  const [formError, setFormError] = useState('');
+  const [editingItem, setEditingItem] = useState(null);
+  const [formData, setFormData] = useState({ name: '', code: '', description: '', faculty: '', coordinator: '' });
 
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
-
-  const fetchDepartments = async () => {
-    setIsLoading(true);
+  const fetchData = async () => {
+    setLoading(true);
     try {
-      const res = await API.get('/departments');
-      setDepartments(res.data);
-    } catch (err) {
-      setDepartments([]);
-    }
-    setIsLoading(false);
+      const [dRes, uRes] = await Promise.all([API.get('/departments'), API.get('/users')]);
+      setDepartments(dRes.data);
+      setUsers(uRes.data.filter((u) => ['lecturer', 'department_coordinator', 'admin'].includes(u.role)));
+    } catch { setDepartments([]); }
+    setLoading(false);
   };
 
-  const openAddModal = () => {
-    setForm({ name: '', code: '', description: '' });
-    setEditDeptId(null);
-    setFormError('');
-    setShowModal(true);
-  };
-
-  const openEditModal = (dept) => {
-    setForm({
-      name: dept.name || '',
-      code: dept.code || '',
-      description: dept.description || '',
-    });
-    setEditDeptId(dept._id);
-    setFormError('');
-    setShowModal(true);
-  };
-
-  const handleFormChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-    setFormError('');
-  };
+  useEffect(() => { fetchData(); }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name) {
-      setFormError('Name is required.');
-      return;
-    }
     try {
-      if (editDeptId) {
-        await API.put(`/departments/${editDeptId}`, form);
-        toast({ title: 'Department Updated', description: 'Department details have been updated.' });
+      if (editingItem) {
+        await API.put(`/departments/${editingItem._id}`, formData);
+        toast({ title: 'Department Updated' });
       } else {
-        await API.post('/departments', form);
-        toast({ title: 'Department Added', description: 'A new department has been created.' });
+        await API.post('/departments', formData);
+        toast({ title: 'Department Created' });
       }
-      setShowModal(false);
-      setForm({ name: '', code: '', description: '' });
-      setEditDeptId(null);
-      fetchDepartments();
+      fetchData();
+      closeModal();
     } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to save department.');
+      toast({ title: 'Error', description: err.response?.data?.error || err.message, variant: 'destructive' });
     }
   };
 
-  const handleDelete = async (deptId) => {
-    if (!window.confirm('Are you sure you want to delete this department?')) return;
+  const handleDelete = async (id) => {
+    if (!confirm('Delete this department?')) return;
     try {
-      await API.delete(`/departments/${deptId}`);
-      toast({ title: 'Department Deleted', description: 'Department has been removed.' });
-      fetchDepartments();
+      await API.delete(`/departments/${id}`);
+      toast({ title: 'Department Deleted' });
+      fetchData();
     } catch (err) {
-      toast({ title: 'Delete Failed', description: err.response?.data?.error || 'Failed to delete department.', variant: 'destructive' });
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
     }
   };
+
+  const openCreate = () => { setEditingItem(null); setFormData({ name: '', code: '', description: '', faculty: '', coordinator: '' }); setShowModal(true); };
+  const openEdit = (item) => {
+    setEditingItem(item);
+    setFormData({ name: item.name, code: item.code || '', description: item.description || '', faculty: item.faculty || '', coordinator: item.coordinator?._id || item.coordinator || '' });
+    setShowModal(true);
+  };
+  const closeModal = () => { setShowModal(false); setEditingItem(null); };
+
+  if (loading) {
+    return <div className="flex justify-center items-center h-64"><div className="loading-spinner-large" /></div>;
+  }
 
   return (
-    <div className="space-y-8 w-full h-full px-0 md:px-2 py-4">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row justify-between items-center gap-4"
-      >
-        <h1 className="text-2xl font-semibold text-foreground">Manage Departments</h1>
-        <Button onClick={openAddModal} className="bg-primary text-primary-foreground hover:bg-primary/90">
-          <Plus className="w-4 h-4 mr-2" /> Add Department
+    <div className="space-y-4">
+      <div className="card-institutional p-4 flex items-center justify-between">
+        <h3 className="font-heading font-bold text-ucc-navy">Departments ({departments.length})</h3>
+        <Button onClick={openCreate} className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white">
+          <Plus className="w-4 h-4 mr-1" /> Add Department
         </Button>
-      </motion.div>
-      {/* Add/Edit Department Modal */}
-      <Dialog open={showModal} onOpenChange={setShowModal}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editDeptId ? 'Edit Department' : 'Add Department'}</DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <Label>Name</Label>
-              <Input name="name" value={form.name} onChange={handleFormChange} required />
-            </div>
-            <div>
-              <Label>Code</Label>
-              <Input name="code" value={form.code} onChange={handleFormChange} />
-            </div>
-            <div>
-              <Label>Description</Label>
-              <Input name="description" value={form.description} onChange={handleFormChange} />
-            </div>
-            {formError && <p className="text-red-500 text-sm">{formError}</p>}
-            <div className="flex justify-end gap-2 pt-2">
-              <Button type="button" variant="outline" onClick={() => { setShowModal(false); setEditDeptId(null); setForm({ name: '', code: '', description: '' }); setFormError(''); }}>Cancel</Button>
-              <Button type="submit" className="bg-primary text-primary-foreground">{editDeptId ? 'Update' : 'Add'}</Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
-      <Card className="bg-card text-card-foreground border-border shadow-lg w-full">
-        <CardHeader>
-          <CardTitle className="text-foreground">All Departments ({departments.length})</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="loading-spinner-large border-primary"></div>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table className="w-full">
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead className="text-foreground">Name</TableHead>
-                    <TableHead className="text-foreground">Code</TableHead>
-                    <TableHead className="text-foreground">Description</TableHead>
-                    <TableHead className="text-foreground text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {departments.map(dept => (
-                    <TableRow key={dept._id} className="border-border hover:bg-muted/50">
-                      <TableCell className="font-medium text-foreground">{dept.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{dept.code || 'N/A'}</TableCell>
-                      <TableCell className="text-muted-foreground">{dept.description || 'N/A'}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="outline" size="icon" onClick={() => openEditModal(dept)}>
-                          <Edit className="w-4 h-4 text-primary" />
-                        </Button>
-                        <Button variant="outline" size="icon" onClick={() => handleDelete(dept._id)} className="hover:bg-destructive/10 hover:border-destructive">
-                          <Trash2 className="w-4 h-4 text-destructive" />
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-          {!isLoading && departments.length === 0 && (
-            <p className="text-center text-muted-foreground py-8">No departments found.</p>
-          )}
-        </CardContent>
-      </Card>
+      </div>
+
+      <div className="card-institutional overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Department</th>
+                <th>Code</th>
+                <th>Faculty</th>
+                <th>Coordinator</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {departments.length === 0 ? (
+                <tr><td colSpan={5} className="text-center py-8 text-gray-400">No departments.</td></tr>
+              ) : (
+                departments.map((d) => (
+                  <tr key={d._id}>
+                    <td>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-ucc-navy/5 rounded flex items-center justify-center flex-shrink-0">
+                          <GraduationCap className="w-4 h-4 text-ucc-navy" />
+                        </div>
+                        <div>
+                          <span className="font-medium">{d.name}</span>
+                          {d.description && <p className="text-xs text-gray-400 truncate max-w-[200px]">{d.description}</p>}
+                        </div>
+                      </div>
+                    </td>
+                    <td><span className="font-mono text-xs">{d.code || '—'}</span></td>
+                    <td>{d.faculty || '—'}</td>
+                    <td>{d.coordinator?.name || '—'}</td>
+                    <td>
+                      <div className="flex gap-1">
+                        <button onClick={() => openEdit(d)} className="p-1.5 rounded hover:bg-blue-50 text-blue-600"><Edit2 className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => handleDelete(d._id)} className="p-1.5 rounded hover:bg-red-50 text-red-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={closeModal}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="card-institutional p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-heading font-bold text-ucc-navy text-lg mb-4">{editingItem ? 'Edit Department' : 'Add Department'}</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div><label className="form-label">Name</label><input type="text" value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className="form-input-institutional" required /></div>
+              <div><label className="form-label">Code</label><input type="text" value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value })} className="form-input-institutional" placeholder="e.g., CSC" /></div>
+              <div><label className="form-label">Faculty</label><input type="text" value={formData.faculty} onChange={(e) => setFormData({ ...formData, faculty: e.target.value })} className="form-input-institutional" placeholder="e.g., Faculty of Science" /></div>
+              <div><label className="form-label">Description</label><textarea value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} className="form-input-institutional" rows={3} /></div>
+              <div>
+                <label className="form-label">Coordinator</label>
+                <select value={formData.coordinator} onChange={(e) => setFormData({ ...formData, coordinator: e.target.value })} className="form-input-institutional">
+                  <option value="">Select Coordinator</option>
+                  {users.map((u) => <option key={u._id} value={u._id}>{u.name} ({u.role?.replace('_', ' ')})</option>)}
+                </select>
+              </div>
+              <div className="flex gap-3 justify-end pt-2">
+                <Button type="button" variant="outline" onClick={closeModal}>Cancel</Button>
+                <Button type="submit" className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white">{editingItem ? 'Update' : 'Create'}</Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default DepartmentManagementPage; 
+export default DepartmentManagementPage;

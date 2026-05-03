@@ -1,156 +1,147 @@
 import React, { useState, useEffect } from 'react';
-import DashboardLayout from '@/components/layout/DashboardLayout';
-import { useBooking } from '@/contexts/BookingContext';
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Calendar, Clock, User, Eye, CheckCircle, XCircle, Filter } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { format, parseISO } from 'date-fns';
+import { Eye, CheckCircle, XCircle, Search, Filter, Clock, AlertCircle } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBooking } from '@/contexts/BookingContext';
 import BookingApprovalModal from '@/components/modals/BookingApprovalModal';
+import API from '@/lib/api';
 
 const ManageBookingsPage = () => {
   const { user } = useAuth();
-  const { bookings, isLoading, fetchBookings } = useBooking();
-  const [filteredBookings, setFilteredBookings] = useState([]);
-  const [activeTab, setActiveTab] = useState("pending");
+  const { bookings, fetchBookings } = useBooking();
+  const [statusFilter, setStatusFilter] = useState('pending');
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedBooking, setSelectedBooking] = useState(null);
-  const [showApprovalModal, setShowApprovalModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
 
-  useEffect(() => {
-    fetchBookings(); // Fetch all relevant bookings
-  }, [fetchBookings]);
+  const filtered = bookings.filter((b) => {
+    const matchesStatus = !statusFilter || b.status === statusFilter;
+    const venueName = (b.venue?.name || '').toLowerCase();
+    const userName = (b.user?.name || '').toLowerCase();
+    const matchesSearch = !searchTerm || venueName.includes(searchTerm.toLowerCase()) || userName.includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
 
-  useEffect(() => {
-    let newFilteredBookings = [];
-    if (activeTab === "pending") {
-      newFilteredBookings = bookings.filter(b => b.status === 'pending');
-    } else if (activeTab === "approved") {
-      newFilteredBookings = bookings.filter(b => b.status === 'approved');
-    } else if (activeTab === "declined") {
-      newFilteredBookings = bookings.filter(b => b.status === 'declined');
-    } else { // "all"
-      newFilteredBookings = bookings;
-    }
-    setFilteredBookings(newFilteredBookings.sort((a, b) => parseISO(b.created_at) - parseISO(a.created_at)));
-  }, [bookings, activeTab]);
-
-  const handleReviewBooking = (booking) => {
-    setSelectedBooking(booking);
-    setShowApprovalModal(true);
+  const counts = {
+    pending: bookings.filter((b) => b.status === 'pending').length,
+    approved: bookings.filter((b) => b.status === 'approved').length,
+    declined: bookings.filter((b) => b.status === 'declined').length,
   };
 
   const getStatusBadge = (status) => {
-    switch (status) {
-      case 'approved':
-        return <span className="px-2 py-1 text-xs font-medium bg-green-100 text-green-700 rounded-full flex items-center"><CheckCircle className="w-3 h-3 mr-1" />Approved</span>;
-      case 'pending':
-        return <span className="px-2 py-1 text-xs font-medium bg-yellow-100 text-yellow-700 rounded-full flex items-center"><Clock className="w-3 h-3 mr-1" />Pending</span>;
-      case 'declined':
-        return <span className="px-2 py-1 text-xs font-medium bg-red-100 text-red-700 rounded-full flex items-center"><XCircle className="w-3 h-3 mr-1" />Declined</span>;
-      default:
-        return <span className="px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded-full">{status}</span>;
-    }
+    const map = { approved: 'badge badge-approved', pending: 'badge badge-pending', declined: 'badge badge-declined' };
+    return map[status] || 'badge badge-info';
+  };
+
+  const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '—';
+  const formatTime = (t) => {
+    try { return new Date(`1970-01-01T${t}Z`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }); }
+    catch { return t || '—'; }
+  };
+
+  const handleApprove = async () => {
+    if (!selectedBooking) return;
+    try {
+      await API.put(`/bookings/${selectedBooking._id}/approve`);
+      fetchBookings();
+      setShowModal(false);
+      setSelectedBooking(null);
+    } catch {}
+  };
+
+  const handleDecline = async (reason) => {
+    if (!selectedBooking) return;
+    try {
+      await API.put(`/bookings/${selectedBooking._id}/decline`, { reason });
+      fetchBookings();
+      setShowModal(false);
+      setSelectedBooking(null);
+    } catch {}
   };
 
   return (
-    <DashboardLayout title="Manage Bookings">
-      <div className="space-y-6">
-        <motion.h1 
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-2xl font-semibold text-foreground"
-        >
-          Booking Management
-        </motion.h1>
-
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 bg-muted p-1 rounded-lg">
-            <TabsTrigger value="pending" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Pending ({bookings.filter(b => b.status === 'pending').length})</TabsTrigger>
-            <TabsTrigger value="approved" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Approved</TabsTrigger>
-            <TabsTrigger value="declined" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">Declined</TabsTrigger>
-            <TabsTrigger value="all" className="data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm">All Bookings</TabsTrigger>
-          </TabsList>
-        
-          <TabsContent value={activeTab}>
-            {isLoading && (
-              <div className="flex justify-center items-center h-64">
-                <div className="loading-spinner-large border-primary"></div>
-              </div>
-            )}
-
-            {!isLoading && filteredBookings.length === 0 && (
-              <Card className="bg-card text-card-foreground border-border">
-                <CardContent className="p-6 text-center">
-                  <Calendar className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-xl font-semibold text-foreground">No Bookings Found</h3>
-                  <p className="text-muted-foreground mt-2">
-                    There are no bookings matching the current filter.
-                  </p>
-                </CardContent>
-              </Card>
-            )}
-
-            {!isLoading && filteredBookings.length > 0 && (
-              <div className="space-y-4">
-                {filteredBookings.map((booking, index) => (
-                  <motion.div
-                    key={booking.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.05 }}
-                  >
-                    <Card className="bg-card text-card-foreground border-border shadow-md hover:shadow-lg transition-shadow">
-                      <CardHeader className="flex flex-row justify-between items-start pb-2">
-                        <CardTitle className="text-lg text-foreground">{booking.venueName || 'Venue Name Missing'}</CardTitle>
-                        {getStatusBadge(booking.status)}
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        <p className="text-muted-foreground text-sm">Purpose: {booking.purpose}</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                          <div className="flex items-center text-muted-foreground">
-                            <User className="w-4 h-4 mr-2 text-primary" />
-                            Booked by: {booking.userName || 'N/A'}
-                          </div>
-                          <div className="flex items-center text-muted-foreground">
-                            <Calendar className="w-4 h-4 mr-2 text-primary" />
-                            Date: {format(parseISO(booking.date), 'PPP')}
-                          </div>
-                          <div className="flex items-center text-muted-foreground">
-                            <Clock className="w-4 h-4 mr-2 text-primary" />
-                            Time: {format(parseISO(`1970-01-01T${booking.start_time}Z`), 'p')} - {format(parseISO(`1970-01-01T${booking.end_time}Z`), 'p')}
-                          </div>
-                        </div>
-                        {booking.status === 'declined' && booking.reason_if_declined && (
-                          <p className="text-red-600 text-xs italic">Reason: {booking.reason_if_declined}</p>
-                        )}
-                        {booking.status === 'pending' && (user.role === 'manager' || user.role === 'admin') && (
-                          <div className="pt-2">
-                            <Button size="sm" onClick={() => handleReviewBooking(booking)} className="bg-primary text-primary-foreground hover:bg-primary/90">
-                              <Eye className="w-4 h-4 mr-1" /> Review
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                ))}
-              </div>
-            )}
-          </TabsContent>
-        </Tabs>
+    <div className="space-y-4">
+      {/* Status Tabs */}
+      <div className="flex gap-2 mb-4">
+        {['', 'pending', 'approved', 'declined'].map((status) => (
+          <button
+            key={status}
+            onClick={() => setStatusFilter(status)}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+              statusFilter === status ? 'bg-ucc-navy text-white' : 'text-gray-600 hover:bg-gray-100'
+            }`}
+          >
+            {status ? `${status.charAt(0).toUpperCase() + status.slice(1)} (${counts[status] || 0})` : `All (${bookings.length})`}
+          </button>
+        ))}
       </div>
+
+      {/* Search */}
+      <div className="card-institutional p-4 mb-4">
+        <div className="relative max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+          <input type="text" placeholder="Search by venue or requester..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="form-input-institutional pl-10" />
+        </div>
+      </div>
+
+      {/* Bookings Table */}
+      <div className="card-institutional overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Requester</th>
+                <th>Venue</th>
+                <th>Date</th>
+                <th>Time</th>
+                <th>Purpose</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.length === 0 ? (
+                <tr><td colSpan={8} className="text-center py-8 text-gray-400">No bookings found.</td></tr>
+              ) : (
+                filtered.map((b) => (
+                  <tr key={b._id}>
+                    <td className="font-medium">{b.user?.name || 'Unknown'}</td>
+                    <td>{b.venue?.name || 'N/A'}</td>
+                    <td>{formatDate(b.date)}</td>
+                    <td className="whitespace-nowrap">{formatTime(b.timeStart)} – {formatTime(b.timeEnd)}</td>
+                    <td className="max-w-[150px] truncate">{b.purpose}</td>
+                    <td>{b.isExternal ? <span className="badge badge-external">External</span> : <span className="text-xs text-gray-400">Internal</span>}</td>
+                    <td><span className={getStatusBadge(b.status)}>{b.status}</span></td>
+                    <td>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => { setSelectedBooking(b); setShowModal(true); }}
+                      >
+                        <Eye className="w-3 h-3 mr-1" /> View
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+        <div className="px-4 py-3 border-t border-gray-100 text-sm text-gray-500">
+          Showing {filtered.length} bookings
+        </div>
+      </div>
+
       <BookingApprovalModal
-        isOpen={showApprovalModal}
-        onClose={() => {
-          setShowApprovalModal(false);
-          setSelectedBooking(null);
-          fetchBookings(); // Re-fetch to update list after modal action
-        }}
+        isOpen={showModal}
         booking={selectedBooking}
+        onClose={() => { setShowModal(false); setSelectedBooking(null); }}
+        onApprove={handleApprove}
+        onDecline={handleDecline}
       />
-    </DashboardLayout>
+    </div>
   );
 };
 

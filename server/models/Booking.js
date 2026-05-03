@@ -13,12 +13,18 @@ const bookingSchema = new mongoose.Schema({
     required: true,
   },
 
-  // Type: 'once' for one-time, 'recurring' for semester-long bookings
+  // Session type
+  sessionType: {
+    type: String,
+    enum: ['one-time', 'recurring'],
+    default: 'one-time',
+  },
+
+  // Legacy field kept for backward compat
   type: {
     type: String,
     enum: ['once', 'recurring'],
     default: 'once',
-    required: true,
   },
 
   // For one-time bookings
@@ -32,18 +38,29 @@ const bookingSchema = new mongoose.Schema({
     type: String, // e.g., "16:00"
   },
 
-  // For recurring bookings
+  // For recurring bookings (legacy)
   dayOfWeek: {
-    type: String, // e.g., "Monday"
+    type: String,
   },
   timeSlotStart: {
-    type: String, // e.g., "08:00"
+    type: String,
   },
   timeSlotEnd: {
-    type: String, // e.g., "10:00"
+    type: String,
   },
   semesterWeeks: {
-    type: [Number], // e.g., [1,2,3,...,14]
+    type: [Number],
+  },
+
+  // New recurrence pattern (flexible)
+  recurrencePattern: {
+    frequency: {
+      type: String,
+      enum: ['weekly', 'biweekly', 'custom'],
+    },
+    daysOfWeek: [String], // ["monday", "wednesday"]
+    endDate: Date,
+    customDates: [Date],
   },
 
   purpose: {
@@ -61,9 +78,27 @@ const bookingSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
   },
+  reviewNote: {
+    type: String,
+    default: '',
+  },
   reasonIfDeclined: {
     type: String,
-  }
+  },
+
+  // External / guest booking fields
+  isExternal: {
+    type: Boolean,
+    default: false,
+  },
+  externalOrgName: {
+    type: String,
+    default: '',
+  },
+  externalContactEmail: {
+    type: String,
+    default: '',
+  },
 }, { timestamps: true });
 
 export default mongoose.model('Booking', bookingSchema);
