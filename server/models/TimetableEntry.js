@@ -24,6 +24,20 @@ const timetableEntrySchema = new mongoose.Schema({
     ref: 'Course',
     required: true,
   },
+  
+  // --- Grouping ---
+  groupNumber: {
+    type: Number,
+    default: 1,
+  },
+  totalGroups: {
+    type: Number,
+    default: 1,
+  },
+  studentsInThisGroup: {
+    type: Number,
+    default: 0,
+  },
 
   // --- Venue(s) ---
   // Single venue (backward compat for manual entries)
@@ -43,6 +57,10 @@ const timetableEntrySchema = new mongoose.Schema({
     ref: 'User',
     default: null,
   },
+  lecturers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
 
   // --- Time scheduling ---
   // For manual/legacy entries: raw day + time strings

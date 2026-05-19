@@ -239,15 +239,20 @@ const TimetableManagementPage = () => {
                               <div
                                 key={e._id}
                                 onClick={(ev) => { ev.stopPropagation(); openEdit(e); }}
-                                className={`p-1.5 rounded border text-[10px] leading-tight cursor-pointer hover:shadow-sm transition-shadow ${getEntryColor(e.type)}`}
+                                className={`p-1.5 rounded border text-[10px] leading-tight cursor-pointer hover:shadow-sm transition-shadow flex flex-col ${getEntryColor(e.type)}`}
                                 style={{
                                   // Span height based on duration
                                   minHeight: `${(parseInt(e.timeEnd) - parseInt(e.timeStart)) * 48 - 8}px`,
                                 }}
                               >
-                                <p className="font-bold truncate">{e.course?.code || 'N/A'}</p>
+                                <p className="font-bold truncate">
+                                  {e.course?.code || 'N/A'}
+                                  {e.totalGroups > 1 && ` (G${e.groupNumber}/${e.totalGroups})`}
+                                </p>
                                 <p className="truncate opacity-80">{e.venue?.name}</p>
-                                <p className="truncate opacity-60">{e.lecturer?.name || ''}</p>
+                                <p className="truncate opacity-60">
+                                  {e.lecturers?.length > 0 ? e.lecturers.map(l => l.name).join(', ') : (e.lecturer?.name || '')}
+                                </p>
                               </div>
                             )
                           ))}
@@ -282,11 +287,23 @@ const TimetableManagementPage = () => {
                 ) : (
                   entries.map((e) => (
                     <tr key={e._id}>
-                      <td><span className="font-mono font-semibold text-ucc-crimson">{e.course?.code}</span> <span className="text-gray-500 text-xs">{e.course?.name}</span></td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-semibold text-ucc-crimson">{e.course?.code}</span>
+                          {e.totalGroups > 1 && (
+                            <span className="text-[10px] bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded font-bold">
+                              G{e.groupNumber}/{e.totalGroups}
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-gray-500 text-xs block">{e.course?.name}</span>
+                      </td>
                       <td className="capitalize">{e.dayOfWeek}</td>
                       <td className="whitespace-nowrap font-mono text-sm">{e.timeStart} – {e.timeEnd}</td>
                       <td>{e.venue?.name || '—'}</td>
-                      <td>{e.lecturer?.name || '—'}</td>
+                      <td className="text-xs">
+                        {e.lecturers?.length > 0 ? e.lecturers.map(l => l.name).join(', ') : (e.lecturer?.name || '—')}
+                      </td>
                       <td><span className={`badge ${getEntryColor(e.type)}`}>{e.type}</span></td>
                       <td>
                         <div className="flex gap-1">

@@ -15,6 +15,7 @@ import timetableRoutes from './routes/timetable.js';
 import schedulingRoutes from './routes/scheduling.js';
 import semesterRoutes from './routes/semesters.js';
 import timeslotRoutes from './routes/timeslots.js';
+import submissionsRoutes from './routes/submissions.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -54,6 +55,7 @@ app.use('/api/timetable', timetableRoutes);
 app.use('/api/scheduling', schedulingRoutes);
 app.use('/api/semesters', semesterRoutes);
 app.use('/api/timeslots', timeslotRoutes);
+app.use('/api/submissions', submissionsRoutes);
 
 // DB & Server Init
 mongoose.connect(process.env.MONGO_URI)

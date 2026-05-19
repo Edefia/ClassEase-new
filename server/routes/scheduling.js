@@ -7,10 +7,22 @@ import Venue from '../models/Venue.js';
 import TimeSlotTemplate from '../models/TimeSlotTemplate.js';
 import verifyToken from '../middleware/authMiddleware.js';
 import requireRole from '../middleware/roleGuard.js';
+import { runPreflightCheck } from '../services/preflightValidator.js';
 import { generateLectureTimetable } from '../services/lectureSchedulingEngine.js';
 import { generateExamTimetable } from '../services/examSchedulingEngine.js';
 
 const router = express.Router();
+
+// GET /api/scheduling/preflight/:semesterId
+// Runs the pre-flight checks and returns errors/warnings
+router.get('/preflight/:semesterId', verifyToken, requireRole('admin', 'academic_affairs'), async (req, res) => {
+  try {
+    const result = await runPreflightCheck(req.params.semesterId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // POST /api/scheduling/generate-lecture
 // Triggers the lecture scheduling engine asynchronously

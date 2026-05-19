@@ -34,9 +34,13 @@ const semesterSchema = new mongoose.Schema({
       end: { type: String, default: '16:00' },
     },
   },
+  submissionDeadline: {
+    type: Date,
+    default: null,
+  },
   status: {
     type: String,
-    enum: ['setup', 'active', 'exam_period', 'closed'],
+    enum: ['setup', 'submission_open', 'submission_closed', 'scheduling', 'active', 'exam_period', 'closed'],
     default: 'setup',
   },
   createdBy: {

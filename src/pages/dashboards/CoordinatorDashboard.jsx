@@ -18,6 +18,8 @@ const CoordinatorDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [timetableStatus, setTimetableStatus] = useState(null);
   const [activeSemester, setActiveSemester] = useState(null);
+  const [submission, setSubmission] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const userBookings = getUserBookings(user?.id);
 
@@ -40,6 +42,15 @@ const CoordinatorDashboard = () => {
           if (semRes.data?._id) {
             const statusRes = await API.get(`/timetable/semester/${semRes.data._id}/status`);
             setTimetableStatus(statusRes.data);
+            
+            try {
+              const subRes = await API.get(`/submissions/semester/${semRes.data._id}`);
+              if (subRes.data && subRes.data.length > 0) {
+                setSubmission(subRes.data[0]);
+              }
+            } catch (err) {
+              console.log('No submission found');
+            }
           }
         } catch { /* No active semester */ }
       } catch (err) { console.error(err); }
@@ -47,6 +58,26 @@ const CoordinatorDashboard = () => {
     };
     loadData();
   }, [user]);
+
+  const handleSubmitCourses = async () => {
+    if (!activeSemester) return;
+    if (!confirm("Are you sure you want to submit all department courses to Academic Affairs? You will not be able to edit them once submitted.")) return;
+    
+    setIsSubmitting(true);
+    try {
+      await API.post(`/submissions/semester/${activeSemester._id}/submit`);
+      // refresh submission
+      const subRes = await API.get(`/submissions/semester/${activeSemester._id}`);
+      if (subRes.data && subRes.data.length > 0) {
+        setSubmission(subRes.data[0]);
+      }
+      alert("Courses submitted successfully!");
+    } catch (error) {
+      alert(error.response?.data?.error || "Error submitting courses");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   const pendingBookings = userBookings.filter((b) => b.status === 'pending').length;
   const approvedBookings = userBookings.filter((b) => b.status === 'approved').length;
@@ -160,6 +191,52 @@ const CoordinatorDashboard = () => {
                     <span className="text-sm text-gray-600">Total Entries</span>
                     <span className="text-sm font-semibold text-ucc-navy">{timetableStatus?.counts?.total || 0}</span>
                   </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400">No active semester configured.</p>
+              )}
+            </div>
+
+            {/* Department Submission Status */}
+            <div className="card-institutional p-5 border-t-4 border-t-ucc-navy">
+              <h3 className="font-heading font-bold text-ucc-navy mb-4 flex items-center gap-2">
+                <FileText className="w-5 h-5 text-ucc-crimson" /> Course Submission
+              </h3>
+              {activeSemester ? (
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50 rounded-lg border border-blue-100">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-ucc-navy">Current Status</span>
+                      <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full ${
+                        submission?.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                        submission?.status === 'submitted' ? 'bg-blue-200 text-blue-800' :
+                        submission?.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                        'bg-gray-200 text-gray-700'
+                      }`}>
+                        {submission?.status?.replace('_', ' ') || 'Draft / Not Started'}
+                      </span>
+                    </div>
+                    {submission?.status === 'rejected' && (
+                      <p className="text-xs text-red-600 mt-2 bg-red-50 p-2 rounded border border-red-100">
+                        <strong>Reason:</strong> {submission.rejectionReason}
+                      </p>
+                    )}
+                    <p className="text-xs text-gray-600 mt-2">
+                      {submission?.status === 'submitted' ? 'Your courses are currently under review by Academic Affairs.' :
+                       submission?.status === 'approved' ? 'Your course submission has been approved for scheduling.' :
+                       'Ensure all courses and lecturers are correctly assigned before submitting.'}
+                    </p>
+                  </div>
+                  
+                  {(!submission || submission.status === 'draft' || submission.status === 'rejected' || submission.status === 'not_started') && (
+                    <Button 
+                      className="w-full bg-ucc-navy hover:bg-ucc-navy-700 text-white" 
+                      onClick={handleSubmitCourses}
+                      disabled={isSubmitting || courses.length === 0}
+                    >
+                      {isSubmitting ? 'Submitting...' : 'Submit Courses to Academic Affairs'}
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <p className="text-sm text-gray-400">No active semester configured.</p>

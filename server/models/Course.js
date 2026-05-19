@@ -38,10 +38,23 @@ const courseSchema = new mongoose.Schema({
     ref: 'User',
     default: null,
   },
+  lecturers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+  }],
   level: {
     type: Number,
     enum: [100, 200, 300, 400, 500, 600],
     required: true,
+  },
+  isNewCourse: {
+    type: Boolean,
+    default: false,
+  },
+  courseType: {
+    type: String,
+    enum: ['core', 'elective'],
+    default: 'core',
   },
   creditHours: {
     type: Number,
@@ -49,8 +62,11 @@ const courseSchema = new mongoose.Schema({
     min: 1,
     max: 6,
   },
-  // Session types for the scheduling engine
-  // e.g., [{ type: 'lecture', hoursPerWeek: 2 }, { type: 'tutorial', hoursPerWeek: 1 }]
+  practicalHoursPerWeek: {
+    type: Number,
+    default: 0,
+  },
+  // Session types for the scheduling engine (Legacy support)
   sessionTypes: {
     type: [sessionTypeSchema],
     default: [],
@@ -78,11 +94,57 @@ const courseSchema = new mongoose.Schema({
     type: Number,
     default: 0,
   },
+  numberOfGroups: {
+    type: Number,
+    default: 1,
+    min: 1,
+  },
+  studentsPerGroup: {
+    type: Number,
+    default: 0,
+  },
+  // Submission workflow
+  submissionStatus: {
+    type: String,
+    enum: ['draft', 'submitted', 'approved', 'rejected'],
+    default: 'draft',
+  },
+  submittedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  approvedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    default: null,
+  },
+  rejectionReason: {
+    type: String,
+    default: '',
+  },
   isActive: {
     type: Boolean,
     default: true,
   },
 }, { timestamps: true });
+
+courseSchema.pre('save', function (next) {
+  if (this.expectedEnrollment > 0 && this.numberOfGroups > 0) {
+    this.studentsPerGroup = Math.ceil(this.expectedEnrollment / this.numberOfGroups);
+  } else {
+    this.studentsPerGroup = this.expectedEnrollment || 0;
+  }
+  
+  // Backward compatibility / Migration for lecturers
+  if (this.lecturer && (!this.lecturers || this.lecturers.length === 0)) {
+    this.lecturers = [this.lecturer];
+  } else if (this.lecturers && this.lecturers.length > 0 && !this.lecturer) {
+    this.lecturer = this.lecturers[0];
+  }
+  
+  next();
+});
 
 // Virtual: compute default session types from credit hours if not specified
 courseSchema.virtual('effectiveSessionTypes').get(function () {

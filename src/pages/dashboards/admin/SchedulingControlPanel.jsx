@@ -42,6 +42,9 @@ const SchedulingControlPanel = () => {
   const [filterType, setFilterType] = useState('');
   const [editEntry, setEditEntry] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [preflight, setPreflight] = useState(null);
+  const [showPreflight, setShowPreflight] = useState(false);
+  const [generationType, setGenerationType] = useState('lecture');
 
   // Fetch semesters
   useEffect(() => {
@@ -72,10 +75,33 @@ const SchedulingControlPanel = () => {
 
   useEffect(() => { fetchTimetableData(); }, [fetchTimetableData]);
 
-  // Generate lecture timetable
-  const handleGenerate = async (type = 'lecture') => {
-    if (mode === 'auto_pilot') { setShowAutoConfirm(true); setAutoCountdown(10); return; }
-    await triggerGeneration(type);
+  // Handle generate click (runs preflight first)
+  const handleGenerateClick = async (type = 'lecture') => {
+    if (!selectedSemester) return;
+    setGenerationType(type);
+    
+    if (mode === 'auto_pilot') { 
+      setShowAutoConfirm(true); 
+      setAutoCountdown(10); 
+      return; 
+    }
+    
+    // Run preflight check
+    setIsGenerating(true);
+    try {
+      const res = await API.get(`/scheduling/preflight/${selectedSemester}`);
+      setPreflight(res.data);
+      setShowPreflight(true);
+    } catch (e) {
+      alert(e.response?.data?.error || e.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleProceedGeneration = () => {
+    setShowPreflight(false);
+    triggerGeneration(generationType);
   };
 
   const triggerGeneration = async (type = 'lecture') => {
@@ -173,10 +199,10 @@ const SchedulingControlPanel = () => {
             <button onClick={() => setMode('semi_auto')} className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${mode === 'semi_auto' ? 'bg-ucc-navy text-white shadow-sm' : 'text-gray-500'}`}>Semi-Auto</button>
             <button onClick={() => setMode('auto_pilot')} className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-all ${mode === 'auto_pilot' ? 'bg-amber-500 text-white shadow-sm' : 'text-gray-500'}`}>Auto-Pilot</button>
           </div>
-          <Button onClick={() => handleGenerate('lecture')} disabled={!selectedSemester || isGenerating} className="bg-ucc-navy text-white gap-1.5 text-sm">
-            {isGenerating ? <><RefreshCw className="w-4 h-4 animate-spin" /> Generating...</> : <><Play className="w-4 h-4" /> Generate Lectures</>}
+          <Button onClick={() => handleGenerateClick('lecture')} disabled={!selectedSemester || isGenerating} className="bg-ucc-navy text-white gap-1.5 text-sm">
+            {isGenerating ? <><RefreshCw className="w-4 h-4 animate-spin" /> Checking...</> : <><Play className="w-4 h-4" /> Generate Lectures</>}
           </Button>
-          <Button onClick={() => handleGenerate('exam')} disabled={!selectedSemester || isGenerating} variant="outline" className="gap-1.5 text-sm border-ucc-navy text-ucc-navy">
+          <Button onClick={() => handleGenerateClick('exam')} disabled={!selectedSemester || isGenerating} variant="outline" className="gap-1.5 text-sm border-ucc-navy text-ucc-navy">
             <Calendar className="w-4 h-4" /> Generate Exams
           </Button>
         </div>
@@ -194,6 +220,82 @@ const SchedulingControlPanel = () => {
               <div className="flex gap-2 justify-end">
                 <Button variant="outline" onClick={() => setShowAutoConfirm(false)}>Cancel</Button>
                 <Button className="bg-amber-500 text-white" onClick={() => triggerGeneration('lecture')}>Confirm — {autoCountdown}s</Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Pre-Flight Modal */}
+      <AnimatePresence>
+        {showPreflight && preflight && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="bg-white rounded-2xl p-6 max-w-2xl w-full mx-4 shadow-2xl max-h-[85vh] overflow-y-auto">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-2">
+                  {preflight.canRun ? <CheckCircle className="w-6 h-6 text-emerald-500" /> : <XCircle className="w-6 h-6 text-red-500" />}
+                  <h3 className="font-heading font-bold text-lg text-ucc-navy">Pre-Flight Validation</h3>
+                </div>
+                <button onClick={() => setShowPreflight(false)} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+              </div>
+
+              <div className="mb-4">
+                <p className="text-sm text-gray-600 mb-2">The following checks were performed before scheduling can begin:</p>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="p-3 bg-blue-50 rounded-lg">
+                    <p className="text-xs text-gray-500">Approved Courses</p>
+                    <p className="text-lg font-bold text-ucc-navy">{preflight.counts.courses}</p>
+                  </div>
+                  <div className="p-3 bg-purple-50 rounded-lg">
+                    <p className="text-xs text-gray-500">Available Venues</p>
+                    <p className="text-lg font-bold text-ucc-navy">{preflight.counts.venues}</p>
+                  </div>
+                  <div className="p-3 bg-teal-50 rounded-lg">
+                    <p className="text-xs text-gray-500">Time Slots</p>
+                    <p className="text-lg font-bold text-ucc-navy">{preflight.counts.timeslots}</p>
+                  </div>
+                  <div className="p-3 bg-amber-50 rounded-lg">
+                    <p className="text-xs text-gray-500">Departments Approved</p>
+                    <p className="text-lg font-bold text-ucc-navy">{preflight.counts.departmentsSubmitted}</p>
+                  </div>
+                </div>
+              </div>
+
+              {preflight.errors?.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-xs font-bold text-red-600 uppercase mb-2">Errors ({preflight.errors.length})</h4>
+                  <div className="space-y-2">
+                    {preflight.errors.map((e, i) => (
+                      <div key={i} className="flex items-start gap-2 p-2 bg-red-50 rounded-lg text-sm text-red-700">
+                        <XCircle className="w-4 h-4 mt-0.5 flex-shrink-0" /> {e}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {preflight.warnings?.length > 0 && (
+                <div className="mb-4">
+                  <h4 className="text-xs font-bold text-amber-600 uppercase mb-2">Warnings ({preflight.warnings.length})</h4>
+                  <div className="space-y-2">
+                    {preflight.warnings.map((w, i) => (
+                      <div key={i} className="flex items-start gap-2 p-2 bg-amber-50 rounded-lg text-sm text-amber-700">
+                        <AlertTriangle className="w-4 h-4 mt-0.5 flex-shrink-0" /> {w}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end mt-6 border-t pt-4">
+                <Button variant="outline" onClick={() => setShowPreflight(false)}>Cancel</Button>
+                <Button 
+                  className={preflight.canRun ? "bg-emerald-600 hover:bg-emerald-700 text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"} 
+                  onClick={handleProceedGeneration}
+                  disabled={!preflight.canRun}
+                >
+                  Proceed to Generation
+                </Button>
               </div>
             </motion.div>
           </motion.div>

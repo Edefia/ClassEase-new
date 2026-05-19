@@ -100,14 +100,13 @@ export async function generateExamTimetable(semesterId, options = {}) {
   }
 
   const courses = await Course.find({
-    $or: [
-      { semesterRef: semesterId },
-      { semester: semester.name.toLowerCase().includes('first') ? 'first' : semester.name.toLowerCase().includes('second') ? 'second' : 'summer', academicYear: semester.academicYear },
-    ],
+    semesterRef: semesterId,
+    submissionStatus: 'approved',
     isActive: true,
   })
     .populate('department', 'name code')
-    .populate('lecturer', 'name email');
+    .populate('lecturer', 'name email')
+    .populate('lecturers', 'name email');
 
   if (courses.length === 0) throw new Error('No courses found for this semester');
 
@@ -284,7 +283,11 @@ export async function generateExamTimetable(semesterId, options = {}) {
         academicYear: semester.academicYear,
         semesterRef: semesterId,
         department: course.department?._id || course.department,
-        lecturer: course.lecturer?._id || null,
+        lecturer: course.lecturers && course.lecturers.length > 0 ? course.lecturers[0]._id : (course.lecturer?._id || null),
+        lecturers: course.lecturers ? course.lecturers.map(l => l._id) : (course.lecturer ? [course.lecturer._id] : []),
+        groupNumber: 1,
+        totalGroups: 1,
+        studentsInThisGroup: course.expectedEnrollment || 0,
         isManuallyAdjusted: false,
         _courseRef: course, // temp reference
       });

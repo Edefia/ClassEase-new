@@ -20,6 +20,8 @@ const AcademicAffairsDashboard = () => {
   const [venues, setVenues] = useState([]);
   const [latestRuns, setLatestRuns] = useState([]);
   const [timeslotCount, setTimeslotCount] = useState(0);
+  const [submissions, setSubmissions] = useState([]);
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -49,6 +51,10 @@ const AcademicAffairsDashboard = () => {
             const runsRes = await API.get(`/scheduling/runs?semesterId=${active._id}`);
             setLatestRuns(runsRes.data.slice(0, 3));
           } catch { /* no runs */ }
+          try {
+            const subRes = await API.get(`/submissions/semester/${active._id}`);
+            setSubmissions(subRes.data);
+          } catch { /* no subs */ }
         }
       } catch (err) { console.error(err); }
       finally { setLoading(false); }
@@ -67,6 +73,28 @@ const AcademicAffairsDashboard = () => {
     if (status === 'complete') return <CheckCircle className="w-4 h-4 text-emerald-500" />;
     if (status === 'failed') return <XCircle className="w-4 h-4 text-red-500" />;
     return <Clock className="w-4 h-4 text-amber-500 animate-spin" />;
+  };
+
+  const handleReviewSubmission = async (id, action) => {
+    let reason = '';
+    if (action === 'reject') {
+      reason = prompt('Please enter a reason for rejection:');
+      if (reason === null) return;
+    } else {
+      if (!confirm('Are you sure you want to approve this submission?')) return;
+    }
+    
+    setIsUpdating(true);
+    try {
+      await API.post(`/submissions/${id}/review`, { action, reason });
+      // reload submissions
+      const subRes = await API.get(`/submissions/semester/${activeSemester._id}`);
+      setSubmissions(subRes.data);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Error reviewing submission');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   return (
@@ -227,6 +255,63 @@ const AcademicAffairsDashboard = () => {
                   <ChevronRight className="w-4 h-4 text-gray-300" />
                 </Link>
               </div>
+            </div>
+
+            {/* Department Submissions Review */}
+            <div className="card-institutional p-5 col-span-1 lg:col-span-2 border-t-4 border-t-ucc-navy">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-heading font-bold text-ucc-navy flex items-center gap-2">
+                  <BookOpen className="w-5 h-5 text-ucc-crimson" /> Department Submissions Review
+                </h3>
+              </div>
+              {submissions.length === 0 ? (
+                <p className="text-sm text-gray-400">No submissions found for the active semester.</p>
+              ) : (
+                <div className="space-y-3">
+                  {submissions.map((sub) => (
+                    <div key={sub._id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 rounded-lg border border-gray-100 bg-gray-50 gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-ucc-navy">{sub.department?.name || 'Unknown Department'}</p>
+                        <p className="text-xs text-gray-500">
+                          {sub.totalCourses} courses • Submitted by {sub.submittedBy?.name || 'Unknown'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className={`text-xs font-bold uppercase px-2.5 py-1 rounded-full ${
+                          sub.status === 'approved' ? 'bg-emerald-100 text-emerald-700' :
+                          sub.status === 'submitted' ? 'bg-blue-200 text-blue-800' :
+                          sub.status === 'rejected' ? 'bg-red-100 text-red-700' :
+                          'bg-gray-200 text-gray-700'
+                        }`}>
+                          {sub.status.replace('_', ' ')}
+                        </span>
+                        
+                        {sub.status === 'submitted' && (
+                          <div className="flex gap-2">
+                            <Button 
+                              size="sm" 
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-7"
+                              onClick={() => handleReviewSubmission(sub._id, 'approve')}
+                              disabled={isUpdating}
+                            >
+                              Approve
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              className="text-red-600 border-red-200 hover:bg-red-50 text-xs h-7"
+                              onClick={() => handleReviewSubmission(sub._id, 'reject')}
+                              disabled={isUpdating}
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 
