@@ -4,9 +4,14 @@ import { Calendar, Plus, Edit2, Trash2, CheckCircle, Clock, AlertTriangle, XCirc
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { toast } from '@/components/ui/use-toast';
 
 const STATUS_STYLES = {
   setup: { label: 'Setup', color: 'bg-gray-100 text-gray-700 border-gray-300', icon: Clock },
+  submission_open: { label: 'Submission Open', color: 'bg-blue-50 text-blue-700 border-blue-300', icon: CheckCircle },
+  submission_closed: { label: 'Submission Closed', color: 'bg-orange-50 text-orange-700 border-orange-300', icon: XCircle },
+  scheduling: { label: 'Scheduling', color: 'bg-purple-50 text-purple-700 border-purple-300', icon: Clock },
   active: { label: 'Active', color: 'bg-emerald-50 text-emerald-700 border-emerald-300', icon: CheckCircle },
   exam_period: { label: 'Exam Period', color: 'bg-amber-50 text-amber-700 border-amber-300', icon: AlertTriangle },
   closed: { label: 'Closed', color: 'bg-red-50 text-red-700 border-red-300', icon: XCircle },
@@ -14,6 +19,7 @@ const STATUS_STYLES = {
 
 const emptyForm = {
   name: '', academicYear: '', startDate: '', endDate: '', status: 'setup',
+  submissionDeadline: '',
   examPeriod: { startDate: '', endDate: '', morningSlot: { start: '08:00', end: '11:00' }, afternoonSlot: { start: '13:00', end: '16:00' } },
 };
 
@@ -25,6 +31,7 @@ const SemesterManagementPage = () => {
   const [form, setForm] = useState({ ...emptyForm });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchSemesters = async () => {
     try { const res = await API.get('/semesters'); setSemesters(res.data); }
@@ -40,6 +47,7 @@ const SemesterManagementPage = () => {
       const payload = { ...form };
       if (payload.examPeriod.startDate === '') payload.examPeriod.startDate = null;
       if (payload.examPeriod.endDate === '') payload.examPeriod.endDate = null;
+      if (payload.submissionDeadline === '') payload.submissionDeadline = null;
       if (editId) { await API.put(`/semesters/${editId}`, payload); }
       else { await API.post('/semesters', payload); }
       setShowForm(false); setEditId(null); setForm({ ...emptyForm }); fetchSemesters();
@@ -53,6 +61,7 @@ const SemesterManagementPage = () => {
       name: s.name, academicYear: s.academicYear,
       startDate: s.startDate?.split('T')[0] || '', endDate: s.endDate?.split('T')[0] || '',
       status: s.status,
+      submissionDeadline: s.submissionDeadline ? new Date(new Date(s.submissionDeadline).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : '',
       examPeriod: {
         startDate: s.examPeriod?.startDate?.split('T')[0] || '',
         endDate: s.examPeriod?.endDate?.split('T')[0] || '',
@@ -64,20 +73,26 @@ const SemesterManagementPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this semester?')) return;
+    const ok = await confirm({
+      title: 'Delete Semester',
+      message: 'Are you sure you want to delete this semester? This cannot be undone and may affect all associated timetables and courses.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try { await API.delete(`/semesters/${id}`); fetchSemesters(); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
 
   const handleStatusChange = async (id, newStatus) => {
     try { await API.put(`/semesters/${id}/status`, { status: newStatus }); fetchSemesters(); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—';
 
   return (
-    <DashboardLayout title="Semester Management" breadcrumbs={[{ label: 'Semesters' }]}>
+    <DashboardLayout breadcrumbs={[{ label: 'Semesters' }]}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-heading font-bold text-ucc-navy">Academic Semesters</h2>
@@ -109,6 +124,22 @@ const SemesterManagementPage = () => {
               <div>
                 <label className="block text-xs font-semibold text-gray-600 mb-1">End Date</label>
                 <input type="date" value={form.endDate} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="form-input-institutional w-full" required />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Submission Deadline (Optional)</label>
+                <input type="datetime-local" value={form.submissionDeadline} onChange={(e) => setForm({ ...form, submissionDeadline: e.target.value })} className="form-input-institutional w-full" />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-gray-600 mb-1">Status</label>
+                <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })} className="form-input-institutional w-full" required>
+                  <option value="setup">Setup</option>
+                  <option value="submission_open">Submission Open</option>
+                  <option value="submission_closed">Submission Closed</option>
+                  <option value="scheduling">Scheduling</option>
+                  <option value="active">Active</option>
+                  <option value="exam_period">Exam Period</option>
+                  <option value="closed">Closed</option>
+                </select>
               </div>
             </div>
             <div className="border-t border-gray-100 pt-4">
@@ -172,6 +203,12 @@ const SemesterManagementPage = () => {
                       </span>
                     </div>
                     <p className="text-sm text-gray-500 mb-3">{s.academicYear} • {formatDate(s.startDate)} — {formatDate(s.endDate)}</p>
+                    {s.submissionDeadline && (
+                      <p className="text-sm font-semibold text-ucc-crimson mb-3 flex items-center gap-1">
+                        <Clock className="w-4 h-4" /> 
+                        Deadline: {new Date(s.submissionDeadline).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}
+                      </p>
+                    )}
                     {s.examPeriod?.startDate && (
                       <div className="flex items-center gap-4 text-xs text-gray-500 bg-gray-50 px-3 py-2 rounded-lg">
                         <span className="font-semibold text-ucc-navy">Exam Period:</span>
@@ -194,6 +231,7 @@ const SemesterManagementPage = () => {
           })}
         </div>
       )}
+      <ConfirmDialog />
     </DashboardLayout>
   );
 };

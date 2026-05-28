@@ -19,7 +19,6 @@ const courseSchema = new mongoose.Schema({
   code: {
     type: String,
     required: true,
-    unique: true,
     trim: true,
     uppercase: true, // e.g., "CSC 101"
   },
@@ -127,6 +126,9 @@ const courseSchema = new mongoose.Schema({
     default: true,
   },
 }, { timestamps: true, suppressReservedKeysWarning: true });
+
+// Unique course code per semester (same code can exist in different semesters)
+courseSchema.index({ code: 1, semester: 1 }, { unique: true });
 
 courseSchema.pre('save', function (next) {
   if (this.estimatedStudents > 0 && this.numberOfGroups > 0) {

@@ -42,13 +42,17 @@ router.post('/bulk', verifyToken, requireRole('admin', 'academic_affairs'), asyn
   try {
     const { periods, days } = req.body;
 
-    // Default periods if not specified
     const defaultPeriods = periods || [
-      { label: 'Period 1', startTime: '07:00', endTime: '09:00' },
-      { label: 'Period 2', startTime: '09:00', endTime: '11:00' },
-      { label: 'Period 3', startTime: '11:00', endTime: '13:00' },
-      { label: 'Period 4', startTime: '13:00', endTime: '15:00' },
-      { label: 'Period 5', startTime: '15:00', endTime: '17:00' },
+      { label: 'Period 1', startTime: '07:00', endTime: '08:00' },
+      { label: 'Period 2', startTime: '08:00', endTime: '09:00' },
+      { label: 'Period 3', startTime: '09:00', endTime: '10:00' },
+      { label: 'Period 4', startTime: '10:00', endTime: '11:00' },
+      { label: 'Period 5', startTime: '11:00', endTime: '12:00' },
+      { label: 'Period 6', startTime: '12:00', endTime: '13:00' },
+      { label: 'Period 7', startTime: '13:00', endTime: '14:00' },
+      { label: 'Period 8', startTime: '14:00', endTime: '15:00' },
+      { label: 'Period 9', startTime: '15:00', endTime: '16:00' },
+      { label: 'Period 10', startTime: '16:00', endTime: '17:00' },
     ];
 
     const defaultDays = days || ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -108,7 +112,7 @@ router.put('/:id', verifyToken, requireRole('admin', 'academic_affairs'), async 
 });
 
 // DELETE time slot
-router.delete('/:id', verifyToken, requireRole('admin'), async (req, res) => {
+router.delete('/:id', verifyToken, requireRole('admin', 'academic_affairs'), async (req, res) => {
   try {
     const slot = await TimeSlotTemplate.findByIdAndDelete(req.params.id);
     if (!slot) return res.status(404).json({ error: 'Time slot not found' });
@@ -119,7 +123,7 @@ router.delete('/:id', verifyToken, requireRole('admin'), async (req, res) => {
 });
 
 // DELETE all time slots (for reset)
-router.delete('/', verifyToken, requireRole('admin'), async (req, res) => {
+router.delete('/', verifyToken, requireRole('admin', 'academic_affairs'), async (req, res) => {
   try {
     const result = await TimeSlotTemplate.deleteMany({});
     res.json({ message: `${result.deletedCount} time slots deleted` });

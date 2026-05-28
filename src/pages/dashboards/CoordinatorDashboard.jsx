@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBooking } from '@/contexts/BookingContext';
 import API from '@/lib/api';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { toast } from '@/components/ui/use-toast';
 
 const CoordinatorDashboard = () => {
   const { user } = useAuth();
@@ -20,6 +22,7 @@ const CoordinatorDashboard = () => {
   const [activeSemester, setActiveSemester] = useState(null);
   const [submission, setSubmission] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const userBookings = getUserBookings(user?.id);
 
@@ -61,7 +64,13 @@ const CoordinatorDashboard = () => {
 
   const handleSubmitCourses = async () => {
     if (!activeSemester) return;
-    if (!confirm("Are you sure you want to submit all department courses to Academic Affairs? You will not be able to edit them once submitted.")) return;
+    const ok = await confirm({
+      title: 'Submit Courses',
+      message: 'Are you sure you want to submit all department courses to Academic Affairs? You will not be able to edit them once submitted.',
+      confirmText: 'Submit',
+      variant: 'info'
+    });
+    if (!ok) return;
     
     setIsSubmitting(true);
     try {
@@ -71,9 +80,9 @@ const CoordinatorDashboard = () => {
       if (subRes.data && subRes.data.length > 0) {
         setSubmission(subRes.data[0]);
       }
-      alert("Courses submitted successfully!");
+      toast({ title: 'Success', description: 'Courses submitted successfully!' });
     } catch (error) {
-      alert(error.response?.data?.error || "Error submitting courses");
+      toast({ title: 'Error', description: error.response?.data?.error || "Error submitting courses", variant: 'destructive' });
     } finally {
       setIsSubmitting(false);
     }
@@ -326,6 +335,7 @@ const CoordinatorDashboard = () => {
           </div>
         </>
       )}
+      <ConfirmDialog />
     </DashboardLayout>
   );
 };

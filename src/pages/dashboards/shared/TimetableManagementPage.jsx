@@ -4,6 +4,7 @@ import { Plus, Edit2, Trash2, Calendar, AlertTriangle } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { toast } from '@/components/ui/use-toast';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
@@ -23,6 +24,7 @@ const TimetableManagementPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [conflicts, setConflicts] = useState([]);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const [filters, setFilters] = useState({
     semester: '',
@@ -118,7 +120,13 @@ const TimetableManagementPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this timetable entry?')) return;
+    const ok = await confirm({
+      title: 'Delete Entry',
+      message: 'Delete this timetable entry?',
+      confirmText: 'Delete',
+      variant: 'danger'
+    });
+    if (!ok) return;
     try {
       await API.delete(`/timetable/${id}`);
       toast({ title: 'Entry Deleted' });
@@ -419,6 +427,7 @@ const TimetableManagementPage = () => {
           </motion.div>
         </div>
       )}
+      <ConfirmDialog />
     </DashboardLayout>
   );
 };

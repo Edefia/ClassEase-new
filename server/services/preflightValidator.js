@@ -117,9 +117,15 @@ export async function runPreflightCheck(semesterId) {
   }
 
   return {
-    passed: errors.length === 0,
+    canRun: errors.length === 0,
     errors,
     warnings,
+    counts: {
+      courses: approvedCourses.length,
+      venues: allVenues.length,
+      timeslots: timeSlots.length,
+      departmentsSubmitted: approvedDepartments,
+    },
     summary: {
       totalDepartments: allDepartments.length,
       approvedDepartments,

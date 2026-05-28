@@ -4,6 +4,7 @@ import { Plus, Edit2, Trash2, Search, BookOpen, Users, GraduationCap } from 'luc
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const CourseManagementPage = () => {
   const [courses, setCourses] = useState([]);
@@ -19,6 +20,7 @@ const CourseManagementPage = () => {
     code: '', name: '', department: '', lecturer: '', level: 100, creditHours: 3,
     semester: 'first', academicYear: '2025/2026', expectedEnrollment: 0,
   });
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchData = async () => {
     setLoading(true);
@@ -26,11 +28,11 @@ const CourseManagementPage = () => {
       const [cRes, dRes, uRes] = await Promise.all([
         API.get('/courses'),
         API.get('/departments'),
-        API.get('/users'),
+        API.get('/users/lecturers'),
       ]);
       setCourses(cRes.data);
       setDepartments(dRes.data);
-      setLecturers(uRes.data.filter((u) => ['lecturer', 'department_coordinator'].includes(u.role)));
+      setLecturers(uRes.data);
     } catch { setCourses([]); }
     setLoading(false);
   };
@@ -64,7 +66,13 @@ const CourseManagementPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this course?')) return;
+    const ok = await confirm({
+      title: 'Delete Course',
+      message: 'Are you sure you want to delete this course? This will remove it from all timetables.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await API.delete(`/courses/${id}`);
       toast({ title: 'Course Deleted' });
@@ -231,6 +239,7 @@ const CourseManagementPage = () => {
           </motion.div>
         </div>
       )}
+      <ConfirmDialog />
     </div>
   );
 };

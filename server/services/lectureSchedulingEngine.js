@@ -99,86 +99,126 @@ export async function generateLectureTimetable(semesterId, options = {}) {
     }
   }
 
+  // Helper to group slots by day and sort them
+  const slotsByDay = {};
+  for (const slot of timeSlots) {
+    if (!slotsByDay[slot.dayOfWeek]) slotsByDay[slot.dayOfWeek] = [];
+    slotsByDay[slot.dayOfWeek].push(slot);
+  }
+
+  // Helper to find contiguous windows of a required size for a given day
+  function getContiguousWindows(daySlots, requiredCount) {
+    const windows = [];
+    if (daySlots.length < requiredCount) return windows;
+    for (let i = 0; i <= daySlots.length - requiredCount; i++) {
+      const window = daySlots.slice(i, i + requiredCount);
+      let isContiguous = true;
+      for (let j = 0; j < requiredCount - 1; j++) {
+        // Simple contiguous check: slot j ends when slot j+1 starts
+        if (window[j].endTime !== window[j + 1].startTime) {
+          isContiguous = false;
+          break;
+        }
+      }
+      if (isContiguous) windows.push(window);
+    }
+    return windows;
+  }
+
   // STEP 4 — MAIN ASSIGNMENT LOOP
   const scheduledEntries = [];
   const failedSessions = [];
   const largeEnrollmentThreshold = 100; // heuristic
 
   for (const session of schedulable) {
-    let bestSlot = null;
+    let bestWindow = null;
     let bestVenue = null;
     let bestScore = -Infinity;
 
     const courseId = session.courseId;
     const groupNum = session.groupNumber;
     const cgKey = `${courseId}_${groupNum}`;
+    
+    const requiredSlotsCount = Math.max(1, Math.ceil((session.durationMinutes || 60) / 60));
 
-    for (const slot of timeSlots) {
-      const slotId = slot._id.toString();
-      const slotDay = slot.dayOfWeek;
+    for (const slotDay of Object.keys(slotsByDay)) {
+      const daySlots = slotsByDay[slotDay];
+      const windows = getContiguousWindows(daySlots, requiredSlotsCount);
 
-      // H2 — ALL lecturers must be free
-      let anyLecturerBusy = false;
-      if (session.lecturers && session.lecturers.length > 0) {
-        anyLecturerBusy = session.lecturers.some(lId => lecturerSlotMatrix[lId.toString()]?.[slotId] === 'occupied');
-      }
-      if (anyLecturerBusy) continue;
-
-      // H5 — Check no other group of this course is at this slot
-      const otherGroupsAtSlot = scheduledEntries.some(e => 
-        e.course.toString() === courseId && 
-        e.timeSlot.toString() === slotId && 
-        e.groupNumber !== groupNum
-      );
-      if (otherGroupsAtSlot) continue;
-
-      // Check course group spread (don't put two sessions of same group on same day)
-      const groupUsedDays = (courseGroupSlotUsage[cgKey] || []).map(u => u.dayOfWeek);
-      const alreadyOnThisDay = groupUsedDays.includes(slotDay);
-      if (alreadyOnThisDay) continue; // Force different days
-
-      for (const venue of session.validVenues) {
-        const venueId = venue._id.toString();
-
-        if (venueSlotMatrix[venueId]?.[slotId] === 'occupied') continue;
-
-        // SCORE
-        let score = 0;
-
-        const deptId = session.department?._id?.toString();
-        const level = session.level;
-        if (deptId) {
-          const levelClashCount = deptLevelSlotMatrix[deptId]?.[level]?.[slotId] || 0;
-          score -= levelClashCount * 150;
+      for (const window of windows) {
+        // H2 — ALL lecturers must be free for ALL slots in the window
+        let anyLecturerBusy = false;
+        if (session.lecturers && session.lecturers.length > 0) {
+          anyLecturerBusy = session.lecturers.some(lId => 
+            window.some(slot => lecturerSlotMatrix[lId.toString()]?.[slot._id.toString()] === 'occupied')
+          );
         }
+        if (anyLecturerBusy) continue;
 
-        if (session.lecturers) {
-          for (const lId of session.lecturers) {
-            const dayLoad = lecturerDayLoad[lId.toString()]?.[slotDay] || 0;
-            if (dayLoad >= 4) score -= 200;
-            else if (dayLoad >= 3) score -= 80;
+        // H5 — Check no other group of this course is at ANY slot in this window
+        const otherGroupsAtWindow = scheduledEntries.some(e => {
+          if (e.course.toString() !== courseId || e.groupNumber === groupNum) return false;
+          // Check if any of e's slots overlap with the current window
+          const eSlotIds = e.timeSlots ? e.timeSlots.map(ts => ts.toString()) : [e.timeSlot?.toString()];
+          return window.some(slot => eSlotIds.includes(slot._id.toString()));
+        });
+        if (otherGroupsAtWindow) continue;
+
+        // Check course group spread (don't put two sessions of same group on same day)
+        const groupUsedDays = (courseGroupSlotUsage[cgKey] || []).map(u => u.dayOfWeek);
+        const alreadyOnThisDay = groupUsedDays.includes(slotDay);
+        if (alreadyOnThisDay) continue; // Force different days
+
+        for (const venue of session.validVenues) {
+          const venueId = venue._id.toString();
+
+          // Venue must be free for ALL slots in the window
+          const venueBusy = window.some(slot => venueSlotMatrix[venueId]?.[slot._id.toString()] === 'occupied');
+          if (venueBusy) continue;
+
+          // SCORE
+          let score = 0;
+          const deptId = session.department?._id?.toString();
+          const level = session.level;
+          
+          if (deptId) {
+            let totalLevelClashCount = 0;
+            for (const slot of window) {
+               totalLevelClashCount += (deptLevelSlotMatrix[deptId]?.[level]?.[slot._id.toString()] || 0);
+            }
+            score -= totalLevelClashCount * 150;
           }
-        }
 
-        // Capacity waste
-        const capacityWaste = venue.capacity - session.minimumCapacity;
-        score -= capacityWaste * 0.05;
+          if (session.lecturers) {
+            for (const lId of session.lecturers) {
+              const dayLoad = lecturerDayLoad[lId.toString()]?.[slotDay] || 0;
+              // Add requiredSlotsCount to projected load
+              const projectedLoad = dayLoad + requiredSlotsCount;
+              if (projectedLoad >= 4) score -= 200;
+              else if (projectedLoad >= 3) score -= 80;
+            }
+          }
 
-        if (session.minimumCapacity > largeEnrollmentThreshold) {
-          if (getPeriodNumber(slot.startTime) <= 2) score += 25;
-        }
+          // Capacity waste
+          const capacityWaste = venue.capacity - session.minimumCapacity;
+          score -= capacityWaste * 0.05;
 
-        if (score > bestScore) {
-          bestScore = score;
-          bestSlot = slot;
-          bestVenue = venue;
+          if (session.minimumCapacity > largeEnrollmentThreshold) {
+            // prefer morning
+            if (getPeriodNumber(window[0].startTime) <= 2) score += 25;
+          }
+
+          if (score > bestScore) {
+            bestScore = score;
+            bestWindow = window;
+            bestVenue = venue;
+          }
         }
       }
     }
 
-    if (bestSlot && bestVenue) {
-      const slotId = bestSlot._id.toString();
-      const slotDay = bestSlot.dayOfWeek;
+    if (bestWindow && bestVenue) {
+      const slotDay = bestWindow[0].dayOfWeek;
       const venueId = bestVenue._id.toString();
       const deptId = session.department?._id?.toString();
 
@@ -189,9 +229,10 @@ export async function generateLectureTimetable(semesterId, options = {}) {
         lecturers: session.lecturers,
         lecturer: session.lecturers?.[0] || null,
         dayOfWeek: slotDay,
-        timeStart: bestSlot.startTime,
-        timeEnd: bestSlot.endTime,
-        timeSlot: bestSlot._id,
+        timeStart: bestWindow[0].startTime,
+        timeEnd: bestWindow[bestWindow.length - 1].endTime,
+        timeSlot: bestWindow[0]._id, // Keep for backward compat
+        timeSlots: bestWindow.map(s => s._id), // Array of slots
         entryType: session.entryType,
         groupNumber: groupNum,
         totalGroups: session.totalGroups,
@@ -203,30 +244,41 @@ export async function generateLectureTimetable(semesterId, options = {}) {
         isManuallyAdjusted: false,
       });
 
-      venueSlotMatrix[venueId][slotId] = 'occupied';
+      for (const slot of bestWindow) {
+        const slotId = slot._id.toString();
+        venueSlotMatrix[venueId][slotId] = 'occupied';
+        
+        if (session.lecturers) {
+          session.lecturers.forEach(l => {
+            const lid = l.toString();
+            lecturerSlotMatrix[lid][slotId] = 'occupied';
+          });
+        }
+
+        if (deptId) {
+          if (!deptLevelSlotMatrix[deptId]) deptLevelSlotMatrix[deptId] = {};
+          if (!deptLevelSlotMatrix[deptId][session.level]) deptLevelSlotMatrix[deptId][session.level] = {};
+          deptLevelSlotMatrix[deptId][session.level][slotId] = (deptLevelSlotMatrix[deptId][session.level][slotId] || 0) + 1;
+        }
+
+        if (!courseGroupSlotUsage[cgKey]) courseGroupSlotUsage[cgKey] = [];
+        courseGroupSlotUsage[cgKey].push({ slotId, dayOfWeek: slotDay });
+      }
+      
+      // Update day load once per window
       if (session.lecturers) {
         session.lecturers.forEach(l => {
           const lid = l.toString();
-          lecturerSlotMatrix[lid][slotId] = 'occupied';
-          lecturerDayLoad[lid][slotDay] = (lecturerDayLoad[lid][slotDay] || 0) + 1;
+          lecturerDayLoad[lid][slotDay] = (lecturerDayLoad[lid][slotDay] || 0) + requiredSlotsCount;
         });
       }
-
-      if (deptId) {
-        if (!deptLevelSlotMatrix[deptId]) deptLevelSlotMatrix[deptId] = {};
-        if (!deptLevelSlotMatrix[deptId][session.level]) deptLevelSlotMatrix[deptId][session.level] = {};
-        deptLevelSlotMatrix[deptId][session.level][slotId] = (deptLevelSlotMatrix[deptId][session.level][slotId] || 0) + 1;
-      }
-
-      if (!courseGroupSlotUsage[cgKey]) courseGroupSlotUsage[cgKey] = [];
-      courseGroupSlotUsage[cgKey].push({ slotId, dayOfWeek: slotDay });
 
     } else {
       failedSessions.push({
         course: courseId,
         entryType: session.entryType,
         groupNumber: groupNum,
-        reason: 'No suitable venue/slot combination found respecting constraints.',
+        reason: `No suitable contiguous slots (${requiredSlotsCount} hrs) found respecting constraints.`,
       });
     }
   }

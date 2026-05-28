@@ -325,7 +325,7 @@ const LandingPage = () => {
                   </Button>
                 </Link>
                 <Link to="/login">
-                  <Button size="lg" variant="outline" className="border-white/20 text-white hover:bg-white/10 text-lg px-8 py-5 font-medium">
+                  <Button size="lg" variant="outline" className="border-white/20 text-ucc-navy-500 hover:bg-white/10 text-lg px-8 py-5 font-medium">
                     Sign In
                   </Button>
                 </Link>

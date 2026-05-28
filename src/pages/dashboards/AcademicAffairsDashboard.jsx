@@ -9,6 +9,8 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import API from '@/lib/api';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { toast } from '@/components/ui/use-toast';
 
 const AcademicAffairsDashboard = () => {
   const { user } = useAuth();
@@ -22,6 +24,7 @@ const AcademicAffairsDashboard = () => {
   const [timeslotCount, setTimeslotCount] = useState(0);
   const [submissions, setSubmissions] = useState([]);
   const [isUpdating, setIsUpdating] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   useEffect(() => {
     const loadData = async () => {
@@ -81,7 +84,13 @@ const AcademicAffairsDashboard = () => {
       reason = prompt('Please enter a reason for rejection:');
       if (reason === null) return;
     } else {
-      if (!confirm('Are you sure you want to approve this submission?')) return;
+      const ok = await confirm({
+        title: 'Approve Submission',
+        message: 'Are you sure you want to approve this submission?',
+        confirmText: 'Approve',
+        variant: 'info'
+      });
+      if (!ok) return;
     }
     
     setIsUpdating(true);
@@ -91,7 +100,7 @@ const AcademicAffairsDashboard = () => {
       const subRes = await API.get(`/submissions/semester/${activeSemester._id}`);
       setSubmissions(subRes.data);
     } catch (err) {
-      alert(err.response?.data?.error || 'Error reviewing submission');
+      toast({ title: 'Error', description: err.response?.data?.error || 'Error reviewing submission', variant: 'destructive' });
     } finally {
       setIsUpdating(false);
     }
@@ -363,6 +372,7 @@ const AcademicAffairsDashboard = () => {
           </div>
         </>
       )}
+      <ConfirmDialog />
     </DashboardLayout>
   );
 };

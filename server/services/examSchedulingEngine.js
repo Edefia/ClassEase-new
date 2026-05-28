@@ -5,16 +5,17 @@ import Venue from '../models/Venue.js';
 import TimetableEntry from '../models/TimetableEntry.js';
 import SchedulingRun from '../models/SchedulingRun.js';
 import Semester from '../models/Semester.js';
+import TimeSlotTemplate from '../models/TimeSlotTemplate.js';
 
 /**
  * Allocate multiple venues for a single exam.
  * @param {object} course - Course document
- * @param {Array} availableVenues - Venues not occupied at this slot
- * @param {string} slotKey - Composite key "date|timeBlock"
+ * @param {Array} availableVenues - Venues
+ * @param {Array<string>} slotKeys - Array of composite keys "dateStr|slotId"
  * @param {object} venueExamMatrix - Current occupancy state
  * @returns {{ success: boolean, venues?: Array, totalCapacity?: number, distribution?: Array, reason?: string }}
  */
-function allocateExamVenues(course, availableVenues, slotKey, venueExamMatrix) {
+function allocateExamVenues(course, availableVenues, slotKeys, venueExamMatrix) {
   const enrollment = course.estimatedStudents || 0;
   let studentsRemaining = enrollment;
   const selectedVenues = [];
@@ -22,7 +23,7 @@ function allocateExamVenues(course, availableVenues, slotKey, venueExamMatrix) {
 
   // Sort by exam capacity descending — use largest venues first
   const sortedVenues = availableVenues
-    .filter((v) => venueExamMatrix[v._id.toString()]?.[slotKey] === 'available')
+    .filter((v) => slotKeys.every(key => venueExamMatrix[v._id.toString()]?.[key] === 'available'))
     .sort((a, b) => (b.capacityExam || Math.floor(b.capacity * 0.5)) - (a.capacityExam || Math.floor(a.capacity * 0.5)));
 
   for (const venue of sortedVenues) {
@@ -118,23 +119,53 @@ export async function generateExamTimetable(semesterId, options = {}) {
     );
   });
 
-  // Generate all exam slots (Mon-Fri only, morning + afternoon)
-  const examSlots = [];
+  // Fetch TimeSlotTemplates
+  const timeSlots = await TimeSlotTemplate.find({ isActive: true }).sort({ dayOfWeek: 1, startTime: 1 });
+  if (timeSlots.length === 0) throw new Error('No time slots defined.');
+
+  const slotsByDay = {};
+  for (const slot of timeSlots) {
+    if (!slotsByDay[slot.dayOfWeek]) slotsByDay[slot.dayOfWeek] = [];
+    slotsByDay[slot.dayOfWeek].push(slot);
+  }
+
+  // Generate all exam days based on dates and available slots
+  const examDays = [];
   const examStart = new Date(semester.examPeriod.startDate);
   const examEnd = new Date(semester.examPeriod.endDate);
   const current = new Date(examStart);
+  
+  const daysMap = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 
   while (current <= examEnd) {
-    const dayOfWeek = current.getDay();
-    if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Mon-Fri only
+    const dayOfWeekIndex = current.getDay();
+    const dayOfWeekStr = daysMap[dayOfWeekIndex];
+    if (slotsByDay[dayOfWeekStr]) {
       const dateStr = current.toISOString().split('T')[0];
-      examSlots.push({ date: new Date(current), dateStr, timeBlock: 'morning' });
-      examSlots.push({ date: new Date(current), dateStr, timeBlock: 'afternoon' });
+      examDays.push({ date: new Date(current), dateStr, dayOfWeekStr, slots: slotsByDay[dayOfWeekStr] });
     }
     current.setDate(current.getDate() + 1);
   }
 
-  if (examSlots.length === 0) throw new Error('No exam slots available in the configured exam period');
+  if (examDays.length === 0) throw new Error('No exam days with valid time slots available in the configured exam period');
+
+  // Helper to find contiguous windows of a required size for a given day
+  function getContiguousWindows(daySlots, requiredCount) {
+    const windows = [];
+    if (daySlots.length < requiredCount) return windows;
+    for (let i = 0; i <= daySlots.length - requiredCount; i++) {
+      const window = daySlots.slice(i, i + requiredCount);
+      let isContiguous = true;
+      for (let j = 0; j < requiredCount - 1; j++) {
+        if (window[j].endTime !== window[j + 1].startTime) {
+          isContiguous = false;
+          break;
+        }
+      }
+      if (isContiguous) windows.push(window);
+    }
+    return windows;
+  }
 
   // ──────────────────────────────────────────
   // STEP 2 — PREPROCESSING
@@ -175,17 +206,19 @@ export async function generateExamTimetable(semesterId, options = {}) {
   const venueExamMatrix = {};
   for (const venue of venues) {
     venueExamMatrix[venue._id.toString()] = {};
-    for (const slot of examSlots) {
-      const key = `${slot.dateStr}|${slot.timeBlock}`;
-      venueExamMatrix[venue._id.toString()][key] = 'available';
+    for (const day of examDays) {
+      for (const slot of day.slots) {
+        const key = `${day.dateStr}|${slot._id.toString()}`;
+        venueExamMatrix[venue._id.toString()][key] = 'available';
+      }
     }
   }
 
   const dateLoadMatrix = {};
   const clusterDateMatrix = {};
 
-  for (const slot of examSlots) {
-    dateLoadMatrix[slot.dateStr] = 0;
+  for (const day of examDays) {
+    dateLoadMatrix[day.dateStr] = 0;
   }
 
   // ──────────────────────────────────────────
@@ -203,55 +236,43 @@ export async function generateExamTimetable(semesterId, options = {}) {
     let bestResult = null;
     let bestScore = -Infinity;
 
-    // Sort candidate slots by preference
-    const candidateSlots = [...examSlots].sort((a, b) => {
-      // Prefer dates with fewer cluster clashes
+    const requiredSlotsCount = Math.max(1, Math.ceil((course.creditHours || 3) * 60 / 60));
+
+    // Sort candidate days by preference
+    const candidateDays = [...examDays].sort((a, b) => {
       const clashA = clusterDateMatrix[clusterKey]?.[a.dateStr] || 0;
       const clashB = clusterDateMatrix[clusterKey]?.[b.dateStr] || 0;
       if (clashA !== clashB) return clashA - clashB;
 
-      // Prefer less loaded dates
       const loadA = dateLoadMatrix[a.dateStr] || 0;
       const loadB = dateLoadMatrix[b.dateStr] || 0;
-      if (loadA !== loadB) return loadA - loadB;
-
-      // Morning before afternoon
-      return a.timeBlock === 'morning' ? -1 : 1;
+      return loadA - loadB;
     });
 
-    for (const slot of candidateSlots) {
-      const slotKey = `${slot.dateStr}|${slot.timeBlock}`;
+    for (const day of candidateDays) {
+      const windows = getContiguousWindows(day.slots, requiredSlotsCount);
+      
+      for (const window of windows) {
+        const slotKeys = window.map(s => `${day.dateStr}|${s._id.toString()}`);
 
-      // Try to allocate venues
-      const result = allocateExamVenues(course, venues, slotKey, venueExamMatrix);
+        // Try to allocate venues
+        const result = allocateExamVenues(course, venues, slotKeys, venueExamMatrix);
 
-      if (result.success) {
-        let score = 0;
+        if (result.success) {
+          let score = 0;
 
-        // Penalize cluster clashes heavily
-        const clashCount = clusterDateMatrix[clusterKey]?.[slot.dateStr] || 0;
-        score -= clashCount * 200;
+          // Penalize cluster clashes heavily
+          const clashCount = clusterDateMatrix[clusterKey]?.[day.dateStr] || 0;
+          score -= clashCount * 200;
 
-        // Reward even date distribution
-        const dateLoad = dateLoadMatrix[slot.dateStr] || 0;
-        score -= dateLoad * 20;
+          // Reward even date distribution
+          const dateLoad = dateLoadMatrix[day.dateStr] || 0;
+          score -= dateLoad * 20;
 
-        // Slight morning preference
-        if (slot.timeBlock === 'morning') score += 5;
-
-        if (score > bestScore) {
-          // Undo the trial venue markings
-          for (const v of result.venues) {
-            venueExamMatrix[v._id.toString()][slotKey] = 'available';
-          }
-
-          bestScore = score;
-          bestSlot = slot;
-          bestResult = result;
-        } else {
-          // Undo trial
-          for (const v of result.venues) {
-            venueExamMatrix[v._id.toString()][slotKey] = 'available';
+          if (score > bestScore) {
+            bestScore = score;
+            bestSlot = { date: day.date, dateStr: day.dateStr, window };
+            bestResult = result;
           }
         }
       }
@@ -259,9 +280,11 @@ export async function generateExamTimetable(semesterId, options = {}) {
 
     if (bestSlot && bestResult) {
       // Re-apply venue markings for chosen slot
-      const chosenKey = `${bestSlot.dateStr}|${bestSlot.timeBlock}`;
+      const chosenKeys = bestSlot.window.map(s => `${bestSlot.dateStr}|${s._id.toString()}`);
       for (const v of bestResult.venues) {
-        venueExamMatrix[v._id.toString()][chosenKey] = 'occupied';
+        for (const key of chosenKeys) {
+          venueExamMatrix[v._id.toString()][key] = 'occupied';
+        }
       }
 
       const semStr = semester.name.toLowerCase().includes('first') ? 'first' : semester.name.toLowerCase().includes('second') ? 'second' : 'summer';
@@ -272,10 +295,12 @@ export async function generateExamTimetable(semesterId, options = {}) {
         venue: bestResult.venues[0]._id,
         entryType: 'exam',
         examDate: bestSlot.date,
-        examTimeBlock: bestSlot.timeBlock,
+        examTimeBlock: null, // Legacy, unused now
         dayOfWeek: getDayName(bestSlot.date),
-        timeStart: bestSlot.timeBlock === 'morning' ? semester.examPeriod.morningSlot.start : semester.examPeriod.afternoonSlot.start,
-        timeEnd: bestSlot.timeBlock === 'morning' ? semester.examPeriod.morningSlot.end : semester.examPeriod.afternoonSlot.end,
+        timeStart: bestSlot.window[0].startTime,
+        timeEnd: bestSlot.window[bestSlot.window.length - 1].endTime,
+        timeSlot: bestSlot.window[0]._id,
+        timeSlots: bestSlot.window.map(s => s._id),
         studentDistribution: bestResult.distribution,
         status: 'draft',
         semester: semesterId,
@@ -298,7 +323,7 @@ export async function generateExamTimetable(semesterId, options = {}) {
       failedExams.push({
         course,
         courseId: course._id,
-        reason: buildExamFailureReason(course, examSlots, venueExamMatrix, venues),
+        reason: buildExamFailureReason(course, examDays, venueExamMatrix, venues),
       });
     }
   }
@@ -423,7 +448,7 @@ function getDayName(date) {
   return days[new Date(date).getDay()];
 }
 
-function buildExamFailureReason(course, examSlots, venueMatrix, venues) {
+function buildExamFailureReason(course, examDays, venueMatrix, venues) {
   const enrollment = course.estimatedStudents || 0;
   const maxCap = venues.reduce((sum, v) => sum + (v.capacityExam || Math.floor(v.capacity * 0.5)), 0);
 
@@ -431,7 +456,7 @@ function buildExamFailureReason(course, examSlots, venueMatrix, venues) {
     return `Total exam capacity across all venues (${maxCap}) is insufficient for enrollment (${enrollment})`;
   }
 
-  return `No exam slot has enough combined venue capacity available for ${enrollment} students. All suitable slots are fully booked.`;
+  return `No contiguous time slots have enough combined venue capacity available for ${enrollment} students. All suitable slot windows are fully booked.`;
 }
 
 export default { generateExamTimetable };

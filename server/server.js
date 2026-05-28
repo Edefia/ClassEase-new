@@ -59,8 +59,23 @@ app.use('/api/submissions', submissionsRoutes);
 
 // DB & Server Init
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
+  .then(async () => {
     console.log("✅ Connected to MongoDB");
+
+    // Drop old global unique index on course code (if it exists) so the new
+    // per-semester compound index (code + semester) can be created instead.
+    try {
+      await mongoose.connection.collection('courses').dropIndex('code_1');
+      console.log("🗑️  Dropped old global unique index on courses.code");
+    } catch (e) {
+      // Index may not exist — that's fine
+    }
+
+    // Sync all Mongoose indexes (creates the new compound index if needed)
+    const Course = (await import('./models/Course.js')).default;
+    await Course.syncIndexes();
+    console.log("🔑 Course indexes synced");
+
     app.listen(process.env.PORT, () => {
       console.log(`🚀 Server running on port ${process.env.PORT}`);
     });

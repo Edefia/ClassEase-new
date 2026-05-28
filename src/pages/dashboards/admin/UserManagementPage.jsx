@@ -4,6 +4,7 @@ import { Plus, Edit2, Trash2, Search, Shield, Mail, Users as UsersIcon } from 'l
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const UserManagementPage = () => {
   const [users, setUsers] = useState([]);
@@ -13,6 +14,7 @@ const UserManagementPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState(null);
   const [formData, setFormData] = useState({ name: '', email: '', role: 'student', department: '', password: '' });
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchUsers = async () => {
     setLoading(true);
@@ -49,7 +51,13 @@ const UserManagementPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this user?')) return;
+    const ok = await confirm({
+      title: 'Delete User',
+      message: 'Are you sure you want to delete this user? This action cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await API.delete(`/users/${id}`);
       toast({ title: 'User Deleted' });
@@ -221,6 +229,7 @@ const UserManagementPage = () => {
           </motion.div>
         </div>
       )}
+      <ConfirmDialog />
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import MaintenanceManager from '@/components/venue/MaintenanceManager';
 import API from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const VenuesManagementPage = () => {
   const [venues, setVenues] = useState([]);
@@ -18,6 +19,7 @@ const VenuesManagementPage = () => {
     name: '', type: 'Lecture Hall', capacity: '', capacityExam: '', building: '', location: '', floor: '', amenities: '',
   });
   const [maintenanceVenue, setMaintenanceVenue] = useState(null);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchData = async () => {
     setLoading(true);
@@ -62,7 +64,13 @@ const VenuesManagementPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this venue?')) return;
+    const ok = await confirm({
+      title: 'Delete Venue',
+      message: 'Are you sure you want to delete this venue? It will be removed from all scheduled timetable entries.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await API.delete(`/venues/${id}`);
       toast({ title: 'Venue Deleted' });
@@ -263,6 +271,7 @@ const VenuesManagementPage = () => {
           </motion.div>
         </div>
       )}
+      <ConfirmDialog />
     </div>
   );
 };

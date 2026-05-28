@@ -4,6 +4,8 @@ import { Clock, Plus, Trash2, RefreshCw, Zap } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { toast } from '@/components/ui/use-toast';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const DAY_LABELS = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat' };
@@ -12,6 +14,9 @@ const TimeSlotSettingsPage = () => {
   const [slots, setSlots] = useState([]);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [formData, setFormData] = useState({ label: '', startTime: '07:00', endTime: '08:00', dayOfWeek: 'monday' });
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchSlots = async () => {
     try { const res = await API.get('/timeslots'); setSlots(res.data); }
@@ -21,24 +26,40 @@ const TimeSlotSettingsPage = () => {
 
   useEffect(() => { fetchSlots(); }, []);
 
+  const handleAddSlot = async (e) => {
+    e.preventDefault();
+    try {
+      await API.post('/timeslots', formData);
+      setShowModal(false);
+      setFormData({ label: '', startTime: '07:00', endTime: '08:00', dayOfWeek: 'monday' });
+      fetchSlots();
+    } catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
+  };
+
   const generateDefaults = async () => {
     setGenerating(true);
     try {
       await API.post('/timeslots/bulk', {});
       fetchSlots();
-    } catch (e) { alert(e.response?.data?.error || e.message); }
+    } catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
     finally { setGenerating(false); }
   };
 
   const deleteSlot = async (id) => {
     try { await API.delete(`/timeslots/${id}`); fetchSlots(); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
 
   const deleteAll = async () => {
-    if (!confirm('Delete ALL time slots? This will affect scheduling.')) return;
+    const ok = await confirm({
+      title: 'Delete All Slots',
+      message: 'Delete ALL time slots? This will affect scheduling.',
+      confirmText: 'Delete',
+      variant: 'danger'
+    });
+    if (!ok) return;
     try { await API.delete('/timeslots'); fetchSlots(); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
 
   // Group slots by period label
@@ -50,13 +71,16 @@ const TimeSlotSettingsPage = () => {
   }
 
   return (
-    <DashboardLayout title="Time Slot Settings" breadcrumbs={[{ label: 'Time Slots' }]}>
+    <DashboardLayout breadcrumbs={[{ label: 'Time Slots' }]}>
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-lg font-heading font-bold text-ucc-navy">Time Slot Templates</h2>
           <p className="text-sm text-gray-500">Define the daily periods used by the scheduling engine</p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowModal(true)} className="text-ucc-navy border-ucc-navy hover:bg-blue-50 gap-1.5">
+            <Plus className="w-3.5 h-3.5" /> Add Slot
+          </Button>
           {slots.length > 0 && (
             <Button variant="outline" size="sm" onClick={deleteAll} className="text-red-500 border-red-200 hover:bg-red-50 gap-1.5">
               <Trash2 className="w-3.5 h-3.5" /> Clear All
@@ -124,6 +148,42 @@ const TimeSlotSettingsPage = () => {
           </div>
         </div>
       )}
+
+      {/* Add Slot Modal */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setShowModal(false)}>
+          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="card-institutional p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-heading font-bold text-ucc-navy text-xl mb-4">Add Custom Time Slot</h3>
+            <form onSubmit={handleAddSlot} className="space-y-4">
+              <div>
+                <label className="form-label">Period Label</label>
+                <input type="text" value={formData.label} onChange={e => setFormData({ ...formData, label: e.target.value })} className="form-input-institutional" placeholder="e.g. Period 1" required />
+              </div>
+              <div>
+                <label className="form-label">Day of Week</label>
+                <select value={formData.dayOfWeek} onChange={e => setFormData({ ...formData, dayOfWeek: e.target.value })} className="form-input-institutional" required>
+                  {DAYS.map(d => <option key={d} value={d}>{DAY_LABELS[d]}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="form-label">Start Time</label>
+                  <input type="time" value={formData.startTime} onChange={e => setFormData({ ...formData, startTime: e.target.value })} className="form-input-institutional font-mono" required />
+                </div>
+                <div>
+                  <label className="form-label">End Time</label>
+                  <input type="time" value={formData.endTime} onChange={e => setFormData({ ...formData, endTime: e.target.value })} className="form-input-institutional font-mono" required />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 pt-4 mt-2">
+                <Button type="button" variant="outline" onClick={() => setShowModal(false)}>Cancel</Button>
+                <Button type="submit" className="bg-ucc-navy hover:bg-ucc-navy-700 text-white">Add Slot</Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+      <ConfirmDialog />
     </DashboardLayout>
   );
 };

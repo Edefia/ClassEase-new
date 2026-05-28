@@ -3,12 +3,14 @@ import { motion } from 'framer-motion';
 import { Wrench, Plus, Trash2, Calendar, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 import { toast } from '@/components/ui/use-toast';
 
 const MaintenanceManager = ({ venue, onUpdate }) => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ reason: '', startDate: '', endDate: '' });
   const [submitting, setSubmitting] = useState(false);
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const handleAdd = async (e) => {
     e.preventDefault();
@@ -31,7 +33,13 @@ const MaintenanceManager = ({ venue, onUpdate }) => {
   };
 
   const handleRemove = async (periodId) => {
-    if (!confirm('Remove this maintenance period?')) return;
+    const ok = await confirm({
+      title: 'Remove Maintenance',
+      message: 'Remove this maintenance period?',
+      confirmText: 'Remove',
+      variant: 'danger'
+    });
+    if (!ok) return;
     try {
       await API.delete(`/venues/${venue._id}/maintenance/${periodId}`);
       toast({ title: 'Maintenance Removed' });
@@ -133,6 +141,7 @@ const MaintenanceManager = ({ venue, onUpdate }) => {
           <Plus className="w-3.5 h-3.5 mr-1" /> Schedule Maintenance
         </Button>
       )}
+      <ConfirmDialog />
     </div>
   );
 };

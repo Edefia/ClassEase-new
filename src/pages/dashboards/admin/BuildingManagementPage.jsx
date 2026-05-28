@@ -4,6 +4,7 @@ import { Plus, Edit2, Trash2, Search, Building, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const BuildingManagementPage = () => {
   const [buildings, setBuildings] = useState([]);
@@ -12,6 +13,7 @@ const BuildingManagementPage = () => {
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({ name: '', code: '', description: '', manager: '' });
+  const { confirm, ConfirmDialog } = useConfirm();
 
   const fetchData = async () => {
     setLoading(true);
@@ -43,7 +45,13 @@ const BuildingManagementPage = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Delete this building?')) return;
+    const ok = await confirm({
+      title: 'Delete Building',
+      message: 'Are you sure you want to delete this building? All associated venues may be affected.',
+      confirmText: 'Delete',
+      variant: 'danger',
+    });
+    if (!ok) return;
     try {
       await API.delete(`/buildings/${id}`);
       toast({ title: 'Building Deleted' });
@@ -139,6 +147,7 @@ const BuildingManagementPage = () => {
           </motion.div>
         </div>
       )}
+      <ConfirmDialog />
     </div>
   );
 };

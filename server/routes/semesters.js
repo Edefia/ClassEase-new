@@ -6,9 +6,42 @@ import requireRole from '../middleware/roleGuard.js';
 
 const router = express.Router();
 
+async function autoUpdateSemesterStatuses() {
+  try {
+    const now = new Date();
+    const semesters = await Semester.find({ status: { $ne: 'closed' } });
+    for (const s of semesters) {
+      let newStatus = s.status;
+      const end = new Date(s.endDate);
+      end.setHours(23, 59, 59, 999);
+      
+      if (now > end) {
+        newStatus = 'closed';
+      } else if (s.examPeriod?.startDate && s.examPeriod?.endDate) {
+        const examStart = new Date(s.examPeriod.startDate);
+        examStart.setHours(0, 0, 0, 0);
+        const examEnd = new Date(s.examPeriod.endDate);
+        examEnd.setHours(23, 59, 59, 999);
+        
+        if (now >= examStart && now <= examEnd) {
+          newStatus = 'exam_period';
+        }
+      }
+      
+      if (newStatus !== s.status) {
+        s.status = newStatus;
+        await s.save();
+      }
+    }
+  } catch (err) {
+    console.error('Auto-update statuses error:', err);
+  }
+}
+
 // GET all semesters
 router.get('/', async (req, res) => {
   try {
+    await autoUpdateSemesterStatuses();
     const { status, academicYear } = req.query;
     const query = {};
     if (status) query.status = status;
@@ -27,6 +60,7 @@ router.get('/', async (req, res) => {
 // GET active semester
 router.get('/active', async (req, res) => {
   try {
+    await autoUpdateSemesterStatuses();
     const semester = await Semester.findOne({
       status: { $in: ['active', 'exam_period'] },
     }).populate('createdBy', 'name');
@@ -82,25 +116,8 @@ router.put('/:id', verifyToken, requireRole('admin', 'academic_affairs'), async 
 router.put('/:id/status', verifyToken, requireRole('admin', 'academic_affairs'), async (req, res) => {
   try {
     const { status } = req.body;
-    const validTransitions = {
-      setup: ['active'],
-      active: ['exam_period', 'closed'],
-      exam_period: ['active', 'closed'],
-      closed: ['setup'],
-    };
-
-    const semester = await Semester.findById(req.params.id);
+    const semester = await Semester.findByIdAndUpdate(req.params.id, { status }, { new: true, runValidators: true });
     if (!semester) return res.status(404).json({ error: 'Semester not found' });
-
-    const allowed = validTransitions[semester.status] || [];
-    if (!allowed.includes(status)) {
-      return res.status(400).json({
-        error: `Cannot transition from '${semester.status}' to '${status}'. Allowed: ${allowed.join(', ')}`,
-      });
-    }
-
-    semester.status = status;
-    await semester.save();
     res.json(semester);
   } catch (err) {
     res.status(400).json({ error: err.message });

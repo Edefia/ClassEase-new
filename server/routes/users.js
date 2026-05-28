@@ -21,6 +21,16 @@ router.get('/', verifyToken, requireAdmin, async (req, res) => {
   }
 });
 
+// Get lecturers (accessible to admin, academic affairs, and department coordinators)
+router.get('/lecturers', verifyToken, async (req, res) => {
+  try {
+    const users = await User.find({ role: { $in: ['lecturer', 'department_coordinator'] } }).select('-passwordHash');
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Update user
 router.put('/:id', verifyToken, requireAdmin, async (req, res) => {
   try {

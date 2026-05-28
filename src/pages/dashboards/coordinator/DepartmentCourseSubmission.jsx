@@ -6,6 +6,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import API from '@/lib/api';
 import { toast } from '@/components/ui/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
 
 const DepartmentCourseSubmission = () => {
   const { user } = useAuth();
@@ -13,12 +14,15 @@ const DepartmentCourseSubmission = () => {
   const [activeSemester, setActiveSemester] = useState(null);
   const [submission, setSubmission] = useState(null);
   const [lecturers, setLecturers] = useState([]);
+  const [departmentId, setDepartmentId] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [lecturerSearch, setLecturerSearch] = useState('');
+  const { confirm, ConfirmDialog } = useConfirm();
   
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [formData, setFormData] = useState({
-    code: '', name: '', isNew: false, courseType: 'core',
+    code: '', name: '', isNew: false,
     creditHours: 3, practicalHoursPerWeek: 0, estimatedStudents: 0,
     numberOfGroups: 1, lecturers: [], level: 100,
   });
@@ -31,6 +35,16 @@ const DepartmentCourseSubmission = () => {
       const semester = semRes.data;
       setActiveSemester(semester);
 
+      // Get department ID safely
+      const dRes = await API.get('/departments');
+      const dept = dRes.data.find(d => 
+        (d.name && user?.department && d.name.toLowerCase().trim() === user.department.toLowerCase().trim()) || 
+        d._id === user?.department || 
+        d._id === user?.departmentId
+      );
+      const matchedDeptId = dept ? dept._id : (user?.departmentId || user?.department);
+      if (matchedDeptId) setDepartmentId(matchedDeptId);
+
       if (semester) {
         // 2. Get department submission status
         const subRes = await API.get(`/submissions/semester/${semester._id}`);
@@ -40,16 +54,21 @@ const DepartmentCourseSubmission = () => {
 
         // 3. Get courses for this semester and department
         const cRes = await API.get('/courses');
-        const deptCourses = cRes.data.filter(c => 
-          (c.semester === semester._id || c.semester?._id === semester._id) &&
-          (c.department?._id === user?.departmentId || c.department?.name === user?.department)
-        );
+        const deptCourses = cRes.data.filter(c => {
+          const semesterId = c.semester?._id || c.semester;
+          const departmentId = c.department?._id || c.department;
+          const semesterMatch = String(semesterId) === String(semester._id);
+          const deptMatch = matchedDeptId
+            ? String(departmentId) === String(matchedDeptId)
+            : c.department?.name?.toLowerCase().trim() === user?.department?.toLowerCase().trim();
+          return semesterMatch && deptMatch;
+        });
         setCourses(deptCourses);
       }
 
       // 4. Get lecturers
-      const uRes = await API.get('/users');
-      setLecturers(uRes.data.filter((u) => ['lecturer', 'department_coordinator'].includes(u.role)));
+      const uRes = await API.get('/users/lecturers');
+      setLecturers(uRes.data);
     } catch (err) {
       console.error(err);
     }
@@ -64,6 +83,7 @@ const DepartmentCourseSubmission = () => {
       const payload = {
         ...formData,
         semester: activeSemester._id,
+        department: departmentId,
       };
 
       if (editingItem) {
@@ -81,7 +101,13 @@ const DepartmentCourseSubmission = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Remove this course from the submission?')) return;
+    const ok = await confirm({
+      title: 'Remove Course',
+      message: 'Remove this course from the submission?',
+      confirmText: 'Remove',
+      variant: 'danger'
+    });
+    if (!ok) return;
     try {
       await API.delete(`/courses/${id}`);
       toast({ title: 'Course Removed' });
@@ -91,13 +117,23 @@ const DepartmentCourseSubmission = () => {
     }
   };
 
-  const handleLecturerChange = (e) => {
-    const selectedOptions = Array.from(e.target.selectedOptions, option => option.value);
-    setFormData({ ...formData, lecturers: selectedOptions });
+  const handleLecturerToggle = (id) => {
+    const current = formData.lecturers || [];
+    if (current.includes(id)) {
+      setFormData({ ...formData, lecturers: current.filter(l => l !== id) });
+    } else {
+      setFormData({ ...formData, lecturers: [...current, id] });
+    }
   };
 
   const submitToAcademicAffairs = async () => {
-    if (!confirm('Are you sure you want to submit? You cannot edit courses once submitted until approved or rejected.')) return;
+    const ok = await confirm({
+      title: 'Submit to Academic Affairs',
+      message: 'Are you sure you want to submit? You can still edit and resubmit courses until the submission deadline.',
+      confirmText: 'Submit',
+      variant: 'info'
+    });
+    if (!ok) return;
     try {
       await API.post(`/submissions/semester/${activeSemester._id}/submit`);
       toast({ title: 'Submission sent to Academic Affairs' });
@@ -110,27 +146,29 @@ const DepartmentCourseSubmission = () => {
   const openCreate = () => {
     setEditingItem(null);
     setFormData({
-      code: '', name: '', isNew: false, courseType: 'core',
+      code: '', name: '', isNew: false,
       creditHours: 3, practicalHoursPerWeek: 0, estimatedStudents: 0,
       numberOfGroups: 1, lecturers: [], level: 100,
     });
+    setLecturerSearch('');
     setShowModal(true);
   };
 
   const openEdit = (c) => {
     setEditingItem(c);
     setFormData({
-      code: c.code, name: c.name, isNew: c.isNew, courseType: c.courseType || 'core',
+      code: c.code, name: c.name, isNew: c.isNew,
       creditHours: c.creditHours, practicalHoursPerWeek: c.practicalHoursPerWeek || 0,
       estimatedStudents: c.estimatedStudents || 0, numberOfGroups: c.numberOfGroups || 1,
       lecturers: c.lecturers?.map(l => l._id || l) || [], level: c.level,
     });
+    setLecturerSearch('');
     setShowModal(true);
   };
 
   const closeModal = () => { setShowModal(false); setEditingItem(null); };
 
-  const isReadOnly = submission?.status === 'submitted' || submission?.status === 'approved';
+  const isReadOnly = activeSemester?.submissionDeadline && new Date() > new Date(activeSemester.submissionDeadline);
 
   if (loading) return <DashboardLayout title="Course Submission"><div className="flex justify-center py-16"><div className="loading-spinner-large" /></div></DashboardLayout>;
 
@@ -167,6 +205,15 @@ const DepartmentCourseSubmission = () => {
                     <strong>Rejection Reason:</strong> {submission.rejectionReason}
                   </p>
                 )}
+                {activeSemester?.submissionDeadline && (
+                  <p className={`mt-2 text-sm font-semibold flex items-center gap-1 ${isReadOnly ? 'text-red-600' : 'text-amber-600'}`}>
+                    <Clock className="w-4 h-4" />
+                    {isReadOnly 
+                      ? `Submission Closed on ${new Date(activeSemester.submissionDeadline).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`
+                      : `Deadline: ${new Date(activeSemester.submissionDeadline).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })}`
+                    }
+                  </p>
+                )}
               </div>
               <div className="flex gap-3">
                 <Button variant="outline" onClick={openCreate} disabled={isReadOnly} className="gap-2">
@@ -190,7 +237,6 @@ const DepartmentCourseSubmission = () => {
                 <thead>
                   <tr>
                     <th>Code & Title</th>
-                    <th>Type</th>
                     <th>Credits</th>
                     <th>Practical (hrs/wk)</th>
                     <th>Est. Students</th>
@@ -212,7 +258,6 @@ const DepartmentCourseSubmission = () => {
                           </div>
                           <span className="text-sm font-medium">{c.name}</span>
                         </td>
-                        <td className="capitalize">{c.courseType}</td>
                         <td>{c.creditHours}</td>
                         <td>{c.practicalHoursPerWeek}</td>
                         <td>{c.estimatedStudents}</td>
@@ -264,13 +309,6 @@ const DepartmentCourseSubmission = () => {
                     {[100, 200, 300, 400, 500, 600].map(l => <option key={l} value={l}>Level {l}</option>)}
                   </select>
                 </div>
-                <div>
-                  <label className="form-label">Course Type</label>
-                  <select value={formData.courseType} onChange={e => setFormData({ ...formData, courseType: e.target.value })} className="form-input-institutional" required>
-                    <option value="core">Core</option>
-                    <option value="elective">Elective</option>
-                  </select>
-                </div>
 
                 <div>
                   <label className="form-label">Credit Hours</label>
@@ -292,11 +330,28 @@ const DepartmentCourseSubmission = () => {
                   <p className="text-[10px] text-gray-500 mt-1">Students will be divided equally (approx {Math.ceil((formData.estimatedStudents || 0) / (formData.numberOfGroups || 1))} per group).</p>
                 </div>
 
-                <div className="md:col-span-2">
-                  <label className="form-label">Lecturers (Hold Ctrl/Cmd to select multiple)</label>
-                  <select multiple value={formData.lecturers} onChange={handleLecturerChange} className="form-input-institutional min-h-[100px]">
-                    {lecturers.map(l => <option key={l._id} value={l._id}>{l.name}</option>)}
-                  </select>
+                <div className="md:col-span-2 p-3 bg-gray-50 border border-gray-200 rounded-md">
+                  <label className="form-label mb-2 block">Assign Lecturers</label>
+                  <input type="text" placeholder="Search lecturers by name..." value={lecturerSearch} onChange={e => setLecturerSearch(e.target.value)} className="form-input-institutional w-full mb-3 py-1.5 text-sm" />
+                  <div className="max-h-40 overflow-y-auto space-y-2 bg-white p-2 border border-gray-100 rounded">
+                    {lecturers.filter(l => l.name.toLowerCase().includes(lecturerSearch.toLowerCase())).length === 0 ? (
+                      <p className="text-xs text-gray-400 text-center py-2">No lecturers found.</p>
+                    ) : (
+                      lecturers
+                        .filter(l => l.name.toLowerCase().includes(lecturerSearch.toLowerCase()))
+                        .map(l => (
+                          <label key={l._id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-gray-50 p-1 rounded">
+                            <input 
+                              type="checkbox" 
+                              checked={(formData.lecturers || []).includes(l._id)} 
+                              onChange={() => handleLecturerToggle(l._id)}
+                              className="w-4 h-4 text-ucc-navy rounded border-gray-300"
+                            />
+                            {l.name}
+                          </label>
+                        ))
+                    )}
+                  </div>
                 </div>
                 
                 <div className="md:col-span-2 flex items-center gap-2 mt-2">
@@ -312,6 +367,7 @@ const DepartmentCourseSubmission = () => {
           </motion.div>
         </div>
       )}
+      <ConfirmDialog />
     </DashboardLayout>
   );
 };

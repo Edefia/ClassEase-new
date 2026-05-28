@@ -27,7 +27,7 @@ const semesterSchema = new mongoose.Schema({
     endDate: { type: Date, default: null },
     morningSlot: {
       start: { type: String, default: '08:00' },
-      end: { type: String, default: '11:00' },
+      end: { type: String, default: '12:00' },
     },
     afternoonSlot: {
       start: { type: String, default: '13:00' },

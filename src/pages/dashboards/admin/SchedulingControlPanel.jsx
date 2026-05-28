@@ -8,6 +8,8 @@ import {
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { Button } from '@/components/ui/button';
 import API from '@/lib/api';
+import { useConfirm } from '@/components/ui/ConfirmDialog';
+import { toast } from '@/components/ui/use-toast';
 
 const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
 const DAY_SHORT = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: 'Thu', friday: 'Fri', saturday: 'Sat' };
@@ -45,6 +47,7 @@ const SchedulingControlPanel = () => {
   const [preflight, setPreflight] = useState(null);
   const [showPreflight, setShowPreflight] = useState(false);
   const [generationType, setGenerationType] = useState('lecture');
+  const { confirm, ConfirmDialog } = useConfirm();
 
   // Fetch semesters
   useEffect(() => {
@@ -93,7 +96,7 @@ const SchedulingControlPanel = () => {
       setPreflight(res.data);
       setShowPreflight(true);
     } catch (e) {
-      alert(e.response?.data?.error || e.message);
+      toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' });
     } finally {
       setIsGenerating(false);
     }
@@ -126,7 +129,7 @@ const SchedulingControlPanel = () => {
         } catch { if (attempts > 30) { clearInterval(poll); setIsGenerating(false); } }
       }, 2000);
     } catch (e) {
-      alert(e.response?.data?.error || e.message);
+      toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' });
       setIsGenerating(false);
     }
   };
@@ -142,24 +145,30 @@ const SchedulingControlPanel = () => {
   // Lifecycle actions
   const handlePublish = async () => {
     try { await API.post(`/timetable/semester/${selectedSemester}/publish`); fetchTimetableData(); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
   const handleUnpublish = async () => {
     try { await API.post(`/timetable/semester/${selectedSemester}/unpublish`); fetchTimetableData(); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
   const handleBeginReview = async () => {
     try { await API.post(`/timetable/semester/${selectedSemester}/review`); fetchTimetableData(); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
   const handleClearDraft = async () => {
-    if (!confirm('Delete all draft entries? This cannot be undone.')) return;
+    const ok = await confirm({
+      title: 'Clear Draft',
+      message: 'Delete all draft entries? This cannot be undone.',
+      confirmText: 'Confirm',
+      variant: 'danger'
+    });
+    if (!ok) return;
     try { await API.post(`/timetable/semester/${selectedSemester}/clear-draft`); fetchTimetableData(); setRunResult(null); setShowClashReport(false); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
   const handleDeleteEntry = async (id) => {
     try { await API.delete(`/timetable/${id}`); fetchTimetableData(); setEditEntry(null); }
-    catch (e) { alert(e.response?.data?.error || e.message); }
+    catch (e) { toast({ title: 'Error', description: e.response?.data?.error || e.message, variant: 'destructive' }); }
   };
 
   // Build grid data
@@ -488,6 +497,7 @@ const SchedulingControlPanel = () => {
           </div>
         </div>
       )}
+      <ConfirmDialog />
     </DashboardLayout>
   );
 };

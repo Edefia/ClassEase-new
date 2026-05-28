@@ -81,6 +81,10 @@ const timetableEntrySchema = new mongoose.Schema({
     ref: 'TimeSlotTemplate',
     default: null,
   },
+  timeSlots: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'TimeSlotTemplate',
+  }],
 
   // --- Entry classification ---
   entryType: {

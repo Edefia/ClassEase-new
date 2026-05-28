@@ -42,7 +42,7 @@ const getNavigationConfig = (role) => {
     { icon: Clock, label: 'My Bookings', path: '/dashboard/bookings' },
     { icon: MapPin, label: 'Find Venues', path: '/dashboard/venues' },
     { section: 'Department' },
-    { icon: BookOpen, label: 'Courses', path: '/dashboard/courses' },
+    { icon: BookOpen, label: 'Courses', path: '/dashboard/department-courses' },
     { icon: ClipboardList, label: 'Dept Timetable', path: '/dashboard/timetable' },
     { section: 'More' },
     { icon: Bell, label: 'Notifications', path: '/dashboard/notifications' },
