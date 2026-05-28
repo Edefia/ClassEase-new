@@ -87,7 +87,7 @@ const LoginPage = () => {
               <div>
                 <label className="form-label">Email Address</label>
                 <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  {/* <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" /> */}
                   <input
                     type="email"
                     name="email"
@@ -106,7 +106,7 @@ const LoginPage = () => {
               <div>
                 <label className="form-label">Password</label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
+                  {/* <Lock className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" /> */}
                   <input
                     type={showPassword ? 'text' : 'password'}
                     name="password"

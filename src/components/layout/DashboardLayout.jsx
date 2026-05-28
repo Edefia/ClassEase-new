@@ -255,7 +255,7 @@ const DashboardLayout = ({ children, title, breadcrumbs = [] }) => {
 
             {/* Breadcrumbs */}
             <div className="breadcrumb hidden sm:flex">
-              <Link to="/dashboard">Dashboard</Link>
+              <Link to="/dashboard">Home</Link>
               {breadcrumbs.map((crumb, i) => (
                 <React.Fragment key={i}>
                   <ChevronRight className="w-3 h-3 breadcrumb-separator" />

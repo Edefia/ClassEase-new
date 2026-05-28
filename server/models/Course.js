@@ -126,7 +126,7 @@ const courseSchema = new mongoose.Schema({
     type: Boolean,
     default: true,
   },
-}, { timestamps: true });
+}, { timestamps: true, suppressReservedKeysWarning: true });
 
 courseSchema.pre('save', function (next) {
   if (this.estimatedStudents > 0 && this.numberOfGroups > 0) {

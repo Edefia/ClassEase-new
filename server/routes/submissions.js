@@ -1,12 +1,13 @@
 import express from 'express';
 import DepartmentSubmission from '../models/DepartmentSubmission.js';
 import Course from '../models/Course.js';
-import { requireRole } from '../middleware/auth.js';
+import verifyToken from '../middleware/authMiddleware.js';
+import requireRole from '../middleware/roleGuard.js';
 
 const router = express.Router();
 
 // Get submissions for a specific semester
-router.get('/semester/:semesterId', requireRole(['admin', 'academic_affairs', 'manager', 'department_coordinator']), async (req, res) => {
+router.get('/semester/:semesterId', verifyToken, requireRole('admin', 'academic_affairs', 'manager', 'department_coordinator'), async (req, res) => {
   try {
     let query = { semester: req.params.semesterId };
     
@@ -28,7 +29,7 @@ router.get('/semester/:semesterId', requireRole(['admin', 'academic_affairs', 'm
 });
 
 // Submit a department's courses
-router.post('/semester/:semesterId/submit', requireRole(['department_coordinator', 'admin']), async (req, res) => {
+router.post('/semester/:semesterId/submit', verifyToken, requireRole('department_coordinator', 'admin'), async (req, res) => {
   try {
     const departmentId = req.user.role === 'admin' ? req.body.departmentId : req.user.department;
     if (!departmentId) return res.status(400).json({ error: 'Department ID required' });
@@ -77,7 +78,7 @@ router.post('/semester/:semesterId/submit', requireRole(['department_coordinator
 });
 
 // Approve or reject a submission
-router.post('/:id/review', requireRole(['academic_affairs', 'admin', 'manager']), async (req, res) => {
+router.post('/:id/review', verifyToken, requireRole('academic_affairs', 'admin', 'manager'), async (req, res) => {
   try {
     const { action, reason } = req.body; // 'approve' or 'reject'
     if (!['approve', 'reject'].includes(action)) {

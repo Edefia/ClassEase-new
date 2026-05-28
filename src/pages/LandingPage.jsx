@@ -82,12 +82,12 @@ const LandingPage = () => {
           <a href="#about" className="text-sm font-medium text-gray-600 hover:text-ucc-navy transition-colors">About</a>
           <div className="w-px h-5 bg-gray-200 mx-2" />
           <Link to="/login">
-            <Button variant="ghost" className="text-ucc-navy hover:bg-gray-100 font-medium">
+            <Button variant="ghost" className="text-ucc-navy hover:bg-gray-100 hover:text-ucc-navy font-medium">
               Sign In
             </Button>
           </Link>
           <Link to="/register">
-            <Button className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white font-semibold px-5">
+            <Button className="bg-ucc-crimson hover:text-ucc-navy text-white font-semibold px-5">
               Get Started
               <ArrowRight className="w-4 h-4 ml-1" />
             </Button>
@@ -149,12 +149,12 @@ const LandingPage = () => {
                 </button>
                 <div className="border-t border-gray-100 my-3" />
                 <Link to="/login" onClick={() => setMobileMenuOpen(false)}>
-                  <Button variant="outline" className="w-full justify-start border-gray-200 text-ucc-navy font-medium py-3">
+                  <Button variant="outline" className="w-full justify-start border-gray-200 text-ucc-navy hover:text-white font-medium py-3">
                     Sign In
                   </Button>
                 </Link>
                 <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="mt-2">
-                  <Button className="w-full bg-ucc-crimson hover:bg-ucc-crimson-600 text-white font-semibold py-3">
+                  <Button className="w-full bg-ucc-crimson text-white hover:text-white font-semibold py-3">
                     Create Account
                     <ArrowRight className="w-4 h-4 ml-1" />
                   </Button>
@@ -210,13 +210,13 @@ const LandingPage = () => {
             className="flex flex-col sm:flex-row gap-4 justify-center mb-12"
           >
             <Link to="/register">
-              <Button size="lg" className="bg-ucc-crimson hover:bg-ucc-crimson-600 text-white text-lg px-8 py-6 font-semibold shadow-lg shadow-ucc-crimson/20">
+              <Button size="lg" className="bg-ucc-crimson hover:bg-ucc-crimson-600 hover:text-white text-white text-lg px-8 py-6 font-semibold shadow-lg shadow-ucc-crimson/20">
                 Start Booking
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
             <Link to="/login">
-              <Button size="lg" variant="outline" className="border-ucc-navy/20 text-ucc-navy hover:bg-ucc-navy/5 text-lg px-8 py-6 font-medium">
+              <Button size="lg" variant="outline" className="border-ucc-navy/20 text-ucc-navy hover:text-ucc-crimson hover:bg-ucc-navy/5 text-lg px-8 py-6 font-medium">
                 Sign In
               </Button>
             </Link>
