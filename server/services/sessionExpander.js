@@ -57,7 +57,7 @@ export function expandCoursesIntoSessions(approvedCourses) {
   for (const course of approvedCourses) {
     const lectureSessionsNeeded = deriveLectureSessions(course.creditHours || 3);
     const groupsCount = course.numberOfGroups || 1;
-    const studentsInGroup = course.studentsPerGroup || course.expectedEnrollment || 0;
+    const studentsInGroup = course.studentsPerGroup || course.estimatedStudents || 0;
     const lecturers = course.lecturers && course.lecturers.length > 0 ? course.lecturers : (course.lecturer ? [course.lecturer] : []);
 
     for (let groupNum = 1; groupNum <= groupsCount; groupNum++) {
@@ -79,7 +79,7 @@ export function expandCoursesIntoSessions(approvedCourses) {
           durationMinutes: lectureSession.duration,
           requiredVenueType: ['Lecture Hall', 'Auditorium', 'Seminar Room', 'Other'],
           minimumCapacity: studentsInGroup,
-          priority: course.expectedEnrollment || 0,
+          priority: course.estimatedStudents || 0,
         });
       }
 
@@ -103,7 +103,7 @@ export function expandCoursesIntoSessions(approvedCourses) {
             durationMinutes: practicalSession.duration,
             requiredVenueType: ['Lab'], // STRICTLY labs for practicals
             minimumCapacity: studentsInGroup,
-            priority: course.expectedEnrollment || 0,
+            priority: course.estimatedStudents || 0,
           });
         }
       }

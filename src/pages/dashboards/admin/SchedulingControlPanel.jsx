@@ -14,7 +14,7 @@ const DAY_SHORT = { monday: 'Mon', tuesday: 'Tue', wednesday: 'Wed', thursday: '
 const DEPT_COLORS = ['#1B3A6B', '#C9922A', '#2E7D52', '#7B2D8B', '#C0392B', '#1B6CA8', '#6B4226', '#2C7873'];
 const TYPE_BADGES = {
   lecture: 'bg-blue-100 text-blue-700', tutorial: 'bg-teal-100 text-teal-700',
-  lab: 'bg-purple-100 text-purple-700', exam: 'bg-red-100 text-red-700',
+  practical: 'bg-purple-100 text-purple-700', exam: 'bg-red-100 text-red-700',
 };
 const STATUS_BADGES = {
   not_generated: { label: 'NOT GENERATED', cls: 'bg-gray-200 text-gray-600' },
@@ -359,7 +359,7 @@ const SchedulingControlPanel = () => {
           <select value={filterType} onChange={e => setFilterType(e.target.value)} className="form-input-institutional w-auto text-xs">
             <option value="">All Types</option>
             <option value="lecture">Lecture</option><option value="tutorial">Tutorial</option>
-            <option value="lab">Lab</option><option value="exam">Exam</option>
+            <option value="practical">Practical</option><option value="exam">Exam</option>
           </select>
           {/* Dept color legend */}
           <div className="flex gap-2 ml-auto">

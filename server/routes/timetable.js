@@ -234,7 +234,7 @@ router.get('/semester/:semesterId', verifyToken, async (req, res) => {
     const { semesterId } = req.params;
     const { status, entryType } = req.query;
     const query = {
-      $or: [{ semesterRef: semesterId }],
+      $or: [{ semester: semesterId }],
       isActive: true,
     };
     if (status) query.status = status;
@@ -249,7 +249,7 @@ router.get('/semester/:semesterId', verifyToken, async (req, res) => {
     // (filtering done on the frontend using user.department)
 
     const entries = await TimetableEntry.find(query)
-      .populate('course', 'code name level creditHours expectedEnrollment')
+      .populate('course', 'code name level creditHours estimatedStudents')
       .populate('venue', 'name type capacity')
       .populate('venues', 'name type capacity capacityExam')
       .populate('lecturer', 'name email')
@@ -268,11 +268,11 @@ router.get('/semester/:semesterId/clashes', verifyToken, requireRole('admin', 'a
   try {
     const { semesterId } = req.params;
     const entries = await TimetableEntry.find({
-      semesterRef: semesterId,
+      semester: semesterId,
       isActive: true,
       status: { $in: ['draft', 'under_review'] },
     })
-      .populate('course', 'code name level expectedEnrollment')
+      .populate('course', 'code name level estimatedStudents')
       .populate('venue', 'name type capacity')
       .populate('lecturer', 'name email')
       .populate('department', 'name code');
@@ -350,7 +350,7 @@ router.post('/semester/:semesterId/publish', verifyToken, requireRole('admin', '
     const { semesterId } = req.params;
 
     const result = await TimetableEntry.updateMany(
-      { semesterRef: semesterId, status: { $in: ['draft', 'under_review'] }, isActive: true },
+      { semester: semesterId, status: { $in: ['draft', 'under_review'] }, isActive: true },
       { status: 'published' }
     );
 
@@ -369,7 +369,7 @@ router.post('/semester/:semesterId/unpublish', verifyToken, requireRole('admin')
     const { semesterId } = req.params;
 
     const result = await TimetableEntry.updateMany(
-      { semesterRef: semesterId, status: 'published', isActive: true },
+      { semester: semesterId, status: 'published', isActive: true },
       { status: 'under_review' }
     );
 
@@ -388,7 +388,7 @@ router.post('/semester/:semesterId/review', verifyToken, requireRole('admin', 'a
     const { semesterId } = req.params;
 
     const result = await TimetableEntry.updateMany(
-      { semesterRef: semesterId, status: 'draft', isActive: true },
+      { semester: semesterId, status: 'draft', isActive: true },
       { status: 'under_review' }
     );
 
@@ -407,7 +407,7 @@ router.post('/semester/:semesterId/clear-draft', verifyToken, requireRole('admin
     const { semesterId } = req.params;
 
     const result = await TimetableEntry.deleteMany({
-      semesterRef: semesterId,
+      semester: semesterId,
       status: 'draft',
     });
 
@@ -425,9 +425,9 @@ router.get('/semester/:semesterId/status', verifyToken, async (req, res) => {
   try {
     const { semesterId } = req.params;
 
-    const draft = await TimetableEntry.countDocuments({ semesterRef: semesterId, status: 'draft', isActive: true });
-    const underReview = await TimetableEntry.countDocuments({ semesterRef: semesterId, status: 'under_review', isActive: true });
-    const published = await TimetableEntry.countDocuments({ semesterRef: semesterId, status: 'published', isActive: true });
+    const draft = await TimetableEntry.countDocuments({ semester: semesterId, status: 'draft', isActive: true });
+    const underReview = await TimetableEntry.countDocuments({ semester: semesterId, status: 'under_review', isActive: true });
+    const published = await TimetableEntry.countDocuments({ semester: semesterId, status: 'published', isActive: true });
 
     let currentStatus = 'not_generated';
     if (published > 0) currentStatus = 'published';

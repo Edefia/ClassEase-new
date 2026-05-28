@@ -47,7 +47,7 @@ const courseSchema = new mongoose.Schema({
     enum: [100, 200, 300, 400, 500, 600],
     required: true,
   },
-  isNewCourse: {
+  isNew: {
     type: Boolean,
     default: false,
   },
@@ -73,24 +73,17 @@ const courseSchema = new mongoose.Schema({
   },
 
   // --- Semester scoping ---
-  // New: ObjectId reference to Semester model (for scheduling engine)
-  semesterRef: {
+  semester: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Semester',
     default: null,
-  },
-  // Legacy: string-based semester field (kept for backward compat)
-  semester: {
-    type: String,
-    enum: ['first', 'second', 'summer'],
-    default: 'first',
   },
   academicYear: {
     type: String,
     default: '2025/2026',
   },
 
-  expectedEnrollment: {
+  estimatedStudents: {
     type: Number,
     default: 0,
   },
@@ -123,6 +116,12 @@ const courseSchema = new mongoose.Schema({
     type: String,
     default: '',
   },
+  submittedAt: {
+    type: Date,
+  },
+  approvedAt: {
+    type: Date,
+  },
   isActive: {
     type: Boolean,
     default: true,
@@ -130,10 +129,10 @@ const courseSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 courseSchema.pre('save', function (next) {
-  if (this.expectedEnrollment > 0 && this.numberOfGroups > 0) {
-    this.studentsPerGroup = Math.ceil(this.expectedEnrollment / this.numberOfGroups);
+  if (this.estimatedStudents > 0 && this.numberOfGroups > 0) {
+    this.studentsPerGroup = Math.ceil(this.estimatedStudents / this.numberOfGroups);
   } else {
-    this.studentsPerGroup = this.expectedEnrollment || 0;
+    this.studentsPerGroup = this.estimatedStudents || 0;
   }
   
   // Backward compatibility / Migration for lecturers

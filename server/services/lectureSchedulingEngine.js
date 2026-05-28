@@ -14,7 +14,7 @@ export async function generateLectureTimetable(semesterId, options = {}) {
   if (!semester) throw new Error('Semester not found');
 
   const approvedCourses = await Course.find({
-    semesterRef: semesterId,
+    semester: semesterId,
     submissionStatus: 'approved',
     isActive: true,
   }).populate('department', 'name code').populate('lecturer', 'name email');
@@ -32,7 +32,7 @@ export async function generateLectureTimetable(semesterId, options = {}) {
   if (timeSlots.length === 0) throw new Error('No time slots defined.');
 
   const existingEntries = await TimetableEntry.find({
-    semesterRef: semesterId,
+    semester: semesterId,
     status: 'published',
     isActive: true,
   });
@@ -192,15 +192,13 @@ export async function generateLectureTimetable(semesterId, options = {}) {
         timeStart: bestSlot.startTime,
         timeEnd: bestSlot.endTime,
         timeSlot: bestSlot._id,
-        type: session.entryType,
         entryType: session.entryType,
         groupNumber: groupNum,
         totalGroups: session.totalGroups,
         studentsInThisGroup: session.studentsInGroup,
         status: 'draft',
-        semester: semester.name.toLowerCase().includes('first') ? 'first' : 'second',
+        semester: semesterId,
         academicYear: semester.academicYear,
-        semesterRef: semesterId,
         department: session.department,
         isManuallyAdjusted: false,
       });

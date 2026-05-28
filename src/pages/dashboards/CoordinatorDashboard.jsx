@@ -84,7 +84,7 @@ const CoordinatorDashboard = () => {
   const levels = [...new Set(courses.map((c) => c.level))].sort();
 
   const stats = [
-    { title: 'Dept Courses', value: courses.length, icon: BookOpen, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', link: '/dashboard/courses' },
+    { title: 'Dept Courses', value: courses.length, icon: BookOpen, iconBg: 'bg-blue-50', iconColor: 'text-blue-600', link: '/dashboard/department-courses' },
     { title: 'Course Levels', value: levels.length, icon: BarChart3, iconBg: 'bg-teal-50', iconColor: 'text-teal-600' },
     { title: 'Pending Bookings', value: pendingBookings, icon: AlertCircle, iconBg: 'bg-amber-50', iconColor: 'text-amber-600', link: '/dashboard/bookings' },
     { title: 'Approved Bookings', value: approvedBookings, icon: CheckCircle, iconBg: 'bg-green-50', iconColor: 'text-green-600' },
@@ -114,7 +114,7 @@ const CoordinatorDashboard = () => {
             </div>
           </div>
           <div className="flex gap-2">
-            <Link to="/dashboard/courses">
+            <Link to="/dashboard/department-courses">
               <Button className="bg-ucc-navy hover:bg-ucc-navy-700 text-white gap-1.5">
                 <BookOpen className="w-4 h-4" /> Manage Courses
               </Button>
@@ -249,7 +249,7 @@ const CoordinatorDashboard = () => {
                 <ClipboardList className="w-5 h-5 text-ucc-crimson" /> Quick Actions
               </h3>
               <div className="space-y-2">
-                <Link to="/dashboard/courses" className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-blue-50 hover:border-blue-200 transition-colors">
+                <Link to="/dashboard/department-courses" className="flex items-center gap-3 p-3 rounded-lg border border-gray-100 hover:bg-blue-50 hover:border-blue-200 transition-colors">
                   <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
                     <BookOpen className="w-4 h-4 text-blue-600" />
                   </div>
@@ -289,7 +289,7 @@ const CoordinatorDashboard = () => {
               <h3 className="font-heading font-bold text-ucc-navy flex items-center gap-2">
                 <FileText className="w-5 h-5 text-ucc-crimson" /> Department Courses
               </h3>
-              <Link to="/dashboard/courses">
+              <Link to="/dashboard/department-courses">
                 <Button variant="outline" size="sm" className="gap-1 text-xs">
                   <Plus className="w-3 h-3" /> Add Course
                 </Button>

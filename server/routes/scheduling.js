@@ -38,7 +38,7 @@ router.post('/generate-lecture', verifyToken, requireRole('admin', 'academic_aff
     // Validate prerequisites
     const courseCount = await Course.countDocuments({
       $or: [
-        { semesterRef: semesterId },
+        { semester: semesterId },
         { semester: semester.name.toLowerCase().includes('first') ? 'first' : 'second', academicYear: semester.academicYear },
       ],
       isActive: true,
@@ -167,7 +167,7 @@ router.get('/run/:runId', verifyToken, requireRole('admin', 'academic_affairs'),
     const run = await SchedulingRun.findById(req.params.runId)
       .populate('semester', 'name academicYear')
       .populate('triggeredBy', 'name email')
-      .populate('failedCourses.course', 'code name expectedEnrollment level');
+      .populate('failedCourses.course', 'code name estimatedStudents level');
     if (!run) return res.status(404).json({ error: 'Scheduling run not found' });
     res.json(run);
   } catch (err) {

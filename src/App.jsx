@@ -38,10 +38,12 @@ import VenuesManagementPage from '@/pages/dashboards/admin/VenuesManagementPage'
 import BuildingManagementPage from '@/pages/dashboards/admin/BuildingManagementPage';
 import DepartmentManagementPage from '@/pages/dashboards/admin/DepartmentManagementPage';
 import CourseManagementPage from '@/pages/dashboards/admin/CourseManagementPage';
+import DepartmentCourseSubmission from '@/pages/dashboards/coordinator/DepartmentCourseSubmission';
 import TimetableManagementPage from '@/pages/dashboards/shared/TimetableManagementPage';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
 // Scheduling pages
+import SubmissionReviewDashboard from '@/pages/dashboards/admin/SubmissionReviewDashboard';
 import SchedulingControlPanel from '@/pages/dashboards/admin/SchedulingControlPanel';
 import SemesterManagementPage from '@/pages/dashboards/admin/SemesterManagementPage';
 import TimeSlotSettingsPage from '@/pages/dashboards/admin/TimeSlotSettingsPage';
@@ -145,6 +147,7 @@ function App() {
                   <Route path="/dashboard/my-schedule" element={<ProtectedRoute><MySchedulePage /></ProtectedRoute>} />
 
                   {/* Scheduling routes (admin / academic_affairs) */}
+                  <Route path="/dashboard/submission-review" element={<ProtectedRoute allowedRoles={['admin', 'academic_affairs']}><SubmissionReviewDashboard /></ProtectedRoute>} />
                   <Route path="/dashboard/scheduling" element={<ProtectedRoute allowedRoles={['admin', 'academic_affairs']}><SchedulingControlPanel /></ProtectedRoute>} />
                   <Route path="/dashboard/semesters" element={<ProtectedRoute allowedRoles={['admin', 'academic_affairs']}><SemesterManagementPage /></ProtectedRoute>} />
                   <Route path="/dashboard/timeslot-settings" element={<ProtectedRoute allowedRoles={['admin', 'academic_affairs']}><TimeSlotSettingsPage /></ProtectedRoute>} />
@@ -163,7 +166,8 @@ function App() {
                   <Route path="/dashboard/users" element={<ProtectedRoute allowedRoles={['admin']}><DashboardLayout title="User Management"><UserManagementPage /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/dashboard/buildings" element={<ProtectedRoute allowedRoles={['admin']}><DashboardLayout title="Building Management"><BuildingManagementPage /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/dashboard/departments" element={<ProtectedRoute allowedRoles={['admin']}><DashboardLayout title="Department Management"><DepartmentManagementPage /></DashboardLayout></ProtectedRoute>} />
-                  <Route path="/dashboard/courses" element={<ProtectedRoute allowedRoles={['admin', 'department_coordinator', 'academic_affairs']}><DashboardLayout title="Course Management"><CourseManagementPage /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/dashboard/courses" element={<ProtectedRoute allowedRoles={['admin', 'academic_affairs']}><DashboardLayout title="Course Management"><CourseManagementPage /></DashboardLayout></ProtectedRoute>} />
+                  <Route path="/dashboard/department-courses" element={<ProtectedRoute allowedRoles={['department_coordinator']}><DepartmentCourseSubmission /></ProtectedRoute>} />
                   <Route path="/dashboard/analytics" element={<ProtectedRoute allowedRoles={['admin', 'manager']}><DashboardLayout title="Analytics"><AnalyticsPage /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/dashboard/settings" element={<ProtectedRoute allowedRoles={['admin']}><DashboardLayout title="System Settings"><SystemSettingsPage /></DashboardLayout></ProtectedRoute>} />
                   <Route path="/dashboard/send-notification" element={<ProtectedRoute allowedRoles={['admin', 'manager']}><DashboardLayout title="Send Notification"><SendNotificationPage /></DashboardLayout></ProtectedRoute>} />

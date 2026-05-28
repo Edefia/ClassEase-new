@@ -263,6 +263,9 @@ const AcademicAffairsDashboard = () => {
                 <h3 className="font-heading font-bold text-ucc-navy flex items-center gap-2">
                   <BookOpen className="w-5 h-5 text-ucc-crimson" /> Department Submissions Review
                 </h3>
+                <Link to="/dashboard/submission-review" className="text-xs text-ucc-navy hover:underline flex items-center gap-1">
+                  Full Review <ChevronRight className="w-3 h-3" />
+                </Link>
               </div>
               {submissions.length === 0 ? (
                 <p className="text-sm text-gray-400">No submissions found for the active semester.</p>

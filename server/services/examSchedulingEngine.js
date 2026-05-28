@@ -15,7 +15,7 @@ import Semester from '../models/Semester.js';
  * @returns {{ success: boolean, venues?: Array, totalCapacity?: number, distribution?: Array, reason?: string }}
  */
 function allocateExamVenues(course, availableVenues, slotKey, venueExamMatrix) {
-  const enrollment = course.expectedEnrollment || 0;
+  const enrollment = course.estimatedStudents || 0;
   let studentsRemaining = enrollment;
   const selectedVenues = [];
   let totalCapacity = 0;
@@ -56,7 +56,7 @@ function allocateExamVenues(course, availableVenues, slotKey, venueExamMatrix) {
  * Distribute students across venues by index number ranges.
  */
 function distributeStudents(course, venues) {
-  const enrollment = course.expectedEnrollment || 0;
+  const enrollment = course.estimatedStudents || 0;
   const distribution = [];
   let assigned = 0;
 
@@ -100,7 +100,7 @@ export async function generateExamTimetable(semesterId, options = {}) {
   }
 
   const courses = await Course.find({
-    semesterRef: semesterId,
+    semester: semesterId,
     submissionStatus: 'approved',
     isActive: true,
   })
@@ -140,7 +140,7 @@ export async function generateExamTimetable(semesterId, options = {}) {
   // STEP 2 — PREPROCESSING
   // ──────────────────────────────────────────
   // Sort by enrollment descending
-  const sortedCourses = [...courses].sort((a, b) => (b.expectedEnrollment || 0) - (a.expectedEnrollment || 0));
+  const sortedCourses = [...courses].sort((a, b) => (b.estimatedStudents || 0) - (a.estimatedStudents || 0));
 
   // Check if any course is fundamentally unschedulable
   const maxTotalExamCapacity = venues.reduce((sum, v) => sum + (v.capacityExam || Math.floor(v.capacity * 0.5)), 0);
@@ -149,10 +149,10 @@ export async function generateExamTimetable(semesterId, options = {}) {
   const schedulable = [];
 
   for (const course of sortedCourses) {
-    if ((course.expectedEnrollment || 0) > maxTotalExamCapacity) {
+    if ((course.estimatedStudents || 0) > maxTotalExamCapacity) {
       unschedulable.push({
         course,
-        reason: `Total exam capacity across all venues (${maxTotalExamCapacity}) is insufficient for enrollment (${course.expectedEnrollment})`,
+        reason: `Total exam capacity across all venues (${maxTotalExamCapacity}) is insufficient for enrollment (${course.estimatedStudents})`,
       });
     } else {
       schedulable.push(course);
@@ -271,7 +271,6 @@ export async function generateExamTimetable(semesterId, options = {}) {
         venues: bestResult.venues.map((v) => v._id),
         venue: bestResult.venues[0]._id,
         entryType: 'exam',
-        type: 'exam',
         examDate: bestSlot.date,
         examTimeBlock: bestSlot.timeBlock,
         dayOfWeek: getDayName(bestSlot.date),
@@ -279,15 +278,14 @@ export async function generateExamTimetable(semesterId, options = {}) {
         timeEnd: bestSlot.timeBlock === 'morning' ? semester.examPeriod.morningSlot.end : semester.examPeriod.afternoonSlot.end,
         studentDistribution: bestResult.distribution,
         status: 'draft',
-        semester: semStr,
+        semester: semesterId,
         academicYear: semester.academicYear,
-        semesterRef: semesterId,
         department: course.department?._id || course.department,
         lecturer: course.lecturers && course.lecturers.length > 0 ? course.lecturers[0]._id : (course.lecturer?._id || null),
         lecturers: course.lecturers ? course.lecturers.map(l => l._id) : (course.lecturer ? [course.lecturer._id] : []),
         groupNumber: 1,
         totalGroups: 1,
-        studentsInThisGroup: course.expectedEnrollment || 0,
+        studentsInThisGroup: course.estimatedStudents || 0,
         isManuallyAdjusted: false,
         _courseRef: course, // temp reference
       });
@@ -409,7 +407,7 @@ export async function generateExamTimetable(semesterId, options = {}) {
       course: f.course._id || f.courseId,
       code: f.course.code,
       name: f.course.name,
-      enrollment: f.course.expectedEnrollment,
+      enrollment: f.course.estimatedStudents,
       reason: f.reason,
     })),
     softConstraintViolations: softViolations,
@@ -426,7 +424,7 @@ function getDayName(date) {
 }
 
 function buildExamFailureReason(course, examSlots, venueMatrix, venues) {
-  const enrollment = course.expectedEnrollment || 0;
+  const enrollment = course.estimatedStudents || 0;
   const maxCap = venues.reduce((sum, v) => sum + (v.capacityExam || Math.floor(v.capacity * 0.5)), 0);
 
   if (maxCap < enrollment) {

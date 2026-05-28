@@ -47,7 +47,7 @@ export async function runPreflightCheck(semesterId) {
 
   // Fetch approved courses
   const approvedCourses = await Course.find({
-    semesterRef: semesterId,
+    semester: semesterId,
     submissionStatus: 'approved',
     isActive: true,
   }).populate('department', 'name code');

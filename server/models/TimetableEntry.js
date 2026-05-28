@@ -83,16 +83,9 @@ const timetableEntrySchema = new mongoose.Schema({
   },
 
   // --- Entry classification ---
-  // Legacy type field (kept for backward compat)
-  type: {
-    type: String,
-    enum: ['lecture', 'tutorial', 'lab', 'exam'],
-    default: 'lecture',
-  },
-  // New entryType field used by scheduling engine
   entryType: {
     type: String,
-    enum: ['lecture', 'tutorial', 'lab', 'exam'],
+    enum: ['lecture', 'tutorial', 'practical', 'exam'],
     default: 'lecture',
   },
 
@@ -105,17 +98,13 @@ const timetableEntrySchema = new mongoose.Schema({
 
   // --- Semester scoping ---
   semester: {
-    type: String,
-    enum: ['first', 'second', 'summer'],
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Semester',
+    default: null,
   },
   academicYear: {
     type: String,
     default: '2025/2026',
-  },
-  semesterRef: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Semester',
-    default: null,
   },
 
   department: {
@@ -168,7 +157,7 @@ const timetableEntrySchema = new mongoose.Schema({
 // Indexes for conflict detection
 timetableEntrySchema.index({ venue: 1, dayOfWeek: 1, semester: 1, academicYear: 1 });
 timetableEntrySchema.index({ lecturer: 1, dayOfWeek: 1, semester: 1, academicYear: 1 });
-timetableEntrySchema.index({ semesterRef: 1, status: 1 });
+timetableEntrySchema.index({ semester: 1, status: 1 });
 timetableEntrySchema.index({ schedulingRun: 1 });
 
 // Virtual: get effective venue (backward compat)
@@ -180,7 +169,7 @@ timetableEntrySchema.virtual('effectiveVenues').get(function () {
 
 // Virtual: get effective entry type
 timetableEntrySchema.virtual('effectiveEntryType').get(function () {
-  return this.entryType || this.type || 'lecture';
+  return this.entryType || 'lecture';
 });
 
 timetableEntrySchema.set('toJSON', { virtuals: true });
